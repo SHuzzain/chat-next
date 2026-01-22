@@ -1,65 +1,146 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import {
+  useState,
+  useEffect,
+  useRef,
+  use,
+  startTransition,
+  Activity,
+  ViewTransition,
+} from "react";
+
+import { ChatBody, ChatHeader, ChatInput } from "@/components/chat";
+import { Message } from "@/types/chat";
+import { chatStream } from "@/actions/chat-stream";
+import Image from "next/image";
+import { motion, AnimatePresence } from "motion/react";
+
+
+type ChatPageProps = {
+  searchParams: Promise<{
+    token: string;
+    origin: string;
+  }>;
+};
+
+
+export default function ChatPage({ searchParams }: ChatPageProps) {
+  const { token, origin } = use(searchParams);
+
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const [isLoading, setLoading] = useState(false);
+  const [isClosed, setIsClosed] = useState(true);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    setLoading(true);
+    e.preventDefault();
+    if (!input.trim()) return;
+
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: input,
+      createdAt: new Date(),
+    };
+
+
+    // 1️⃣ Optimistic user message
+    startTransition(() => {
+      setMessages((prev) => [...prev, userMessage]);
+    });
+    setInput("");
+    const sendMessages = JSON.parse(JSON.stringify([...messages, userMessage]));
+
+
+    // 2️⃣ Assistant placeholder (ONLY assistant)
+    const assistantId = crypto.randomUUID();
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        createdAt: null,
+      },
+    ]);
+
+    // 3️⃣ Stream assistant response
+    try {
+      await chatStream({
+        messages: sendMessages,
+        origin,
+        token,
+        onChunk: (text, done) => {
+          setLoading(false);
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? {
+                  ...m,
+                  content: text,
+                  createdAt: done ? new Date() : m.createdAt,
+                }
+                : m
+            )
+          );
+        },
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <>
+      <AnimatePresence>
+        {!isClosed && (
+          <motion.div
+            initial={{ x: 100, y: 100, opacity: 0 }}
+            animate={{ x: 0, y: 0, opacity: 1 }}
+            exit={{ x: 100, y: 100, opacity: 0, }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="flex flex-col h-screen w-full overflow-hidden bg-slate-300/20 backdrop-blur-sm border-4 rounded-2xl border-white"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <ChatHeader onClose={() => setIsClosed(true)} />
+            <ChatBody messages={messages} isLoading={isLoading} messagesEndRef={messagesEndRef} />
+            <ChatInput handleSubmit={handleSubmit} isLoading={isLoading} input={input} setInput={setInput} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isClosed && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-4 right-4 z-50"
           >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            <button
+              onClick={() => setIsClosed(false)}
+              className="bg-white shadow-lg p-3 rounded-full"
+            >
+              <Image src="/champ.svg" width={40} height={40} alt="Chat" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+    </>
+
   );
 }
