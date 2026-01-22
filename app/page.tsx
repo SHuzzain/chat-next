@@ -6,8 +6,6 @@ import {
   useRef,
   use,
   startTransition,
-  Activity,
-  ViewTransition,
 } from "react";
 
 import { ChatBody, ChatHeader, ChatInput } from "@/components/chat";
