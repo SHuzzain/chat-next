@@ -1,6 +1,5 @@
 import React from 'react'
 import { ScrollArea } from '../ui/scroll-area';
-import Image from 'next/image';
 
 interface ChatBodyProps {
     messages: {
@@ -15,7 +14,7 @@ interface ChatBodyProps {
 const ChatBody = ({ messages, isLoading, messagesEndRef }: ChatBodyProps) => {
 
     return (
-        <ScrollArea className="flex-1 px-4 py-6 space-y-4 h-[calc(100vh-10rem)] ">
+        <ScrollArea className="flex-1 px-4 py-6  h-[calc(100vh-10rem)] ">
             {messages.length === 0 && (
                 <div className="flex items-center justify-center h-full flex-1">
                     <div className="text-center">
@@ -29,7 +28,7 @@ const ChatBody = ({ messages, isLoading, messagesEndRef }: ChatBodyProps) => {
                 return (
                     message.content && <div
                         key={message.id}
-                        className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+                        className={`flex ${isUser ? "justify-end" : "justify-start"} mt-2`}
                     >
                         <div
                             className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-lg ${isUser
