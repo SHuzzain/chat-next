@@ -27,10 +27,7 @@
       width: 80px;
       height: 80px;
       border: none;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
       z-index: 999999;
-      background: transparent;
     `;
     iframe.allow = 'clipboard-read; clipboard-write';
     
