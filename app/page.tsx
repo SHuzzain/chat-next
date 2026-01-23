@@ -9,7 +9,7 @@ import {
 } from "react";
 
 import { ChatBody, ChatHeader, ChatInput } from "@/components/chat";
-import { Message } from "@/types/chat";
+import { ChatType, Message } from "@/types/chat";
 import { chatStream } from "@/actions/chat-stream";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
@@ -32,7 +32,7 @@ export default function ChatPage({ searchParams }: ChatPageProps) {
 
   const [isLoading, setLoading] = useState(false);
   const [isClosed, setIsClosed] = useState(true);
-  const [chatType, setChatType] = useState<"CHAT" | "AGENT">("CHAT")
+  const [chatType, setChatType] = useState<ChatType>("CHAT")
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -114,9 +114,9 @@ export default function ChatPage({ searchParams }: ChatPageProps) {
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="flex flex-col h-screen w-full overflow-hidden bg-slate-300/20 backdrop-blur-sm border-4 rounded-2xl border-white"
           >
-            <ChatHeader onClose={() => setIsClosed(true)} chatType={chatType} setChatType={setChatType} />
+            <ChatHeader onClose={() => setIsClosed(true)} />
             <ChatBody messages={messages} isLoading={isLoading} messagesEndRef={messagesEndRef} />
-            <ChatInput handleSubmit={handleSubmit} isLoading={isLoading} input={input} setInput={setInput} />
+            <ChatInput handleSubmit={handleSubmit} isLoading={isLoading} input={input} setInput={setInput} chatType={chatType} setChatType={setChatType} />
           </motion.div>
         )}
       </AnimatePresence>

@@ -1,16 +1,12 @@
 import Image from 'next/image'
-import React from 'react'
 import { Button } from '../ui/button'
 import { XIcon } from 'lucide-react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 interface ChatHeaderProps {
     onClose?: () => void;
-    setChatType: (type: "CHAT" | "AGENT") => void;
-    chatType: "CHAT" | "AGENT";
 }
 
-const ChatHeader = ({ onClose, chatType, setChatType }: ChatHeaderProps) => {
+const ChatHeader = ({ onClose }: ChatHeaderProps) => {
     return (
         <div className="flex items-center justify-between  bg-white p-2">
             {/* Logo */}
@@ -19,7 +15,7 @@ const ChatHeader = ({ onClose, chatType, setChatType }: ChatHeaderProps) => {
                     <Image src="/champ.svg" alt="Logo" width={40} height={40} className='object-contain mb-1' />
                 </figure>
 
-                <section className='flex gap-4 items-center'>
+                <section className='flex gap-4 items-center flex-wrap'>
                     <div>
                         <h5 className='text-lg font-semibold'>
                             Mind Champs
@@ -30,15 +26,6 @@ const ChatHeader = ({ onClose, chatType, setChatType }: ChatHeaderProps) => {
                     </div>
 
 
-                    <Select value={chatType} onValueChange={setChatType}>
-                        <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Chat" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="CHAT">Chat</SelectItem>
-                            <SelectItem value="AGENT">Agent</SelectItem>
-                        </SelectContent>
-                    </Select>
                 </section>
             </div>
 

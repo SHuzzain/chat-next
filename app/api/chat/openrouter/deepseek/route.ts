@@ -1,8 +1,7 @@
-import { stepCountIs, streamText } from "ai";
+import { streamText } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 
 import { SYSTEM_PROMPT } from "@/lib/prompt";
-import { getTools } from "@/actions/get-tools";
 import { NextResponse } from "next/server";
 import { Message } from "@/types/chat";
 
@@ -19,8 +18,8 @@ const openrouter = createOpenRouter({
 export async function POST(req: Request) {
   try {
     const body: ChatBody = await req.json();
-    const { messages, origin, token } = body;
-    // const tools = await getTools(origin, token);
+    const { messages } = body;
+    console.log({ messages });
 
     const result = streamText({
       model: openrouter.chat("deepseek/deepseek-r1-0528:free"),
@@ -31,9 +30,7 @@ export async function POST(req: Request) {
           role: message.role,
           content: message.content,
         })),
-      // tools: tools,
       maxOutputTokens: 1000,
-      // stopWhen: stepCountIs(5),
     });
 
     return result.toTextStreamResponse();

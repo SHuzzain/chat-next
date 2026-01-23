@@ -1,7 +1,7 @@
-import { Message } from "@/types/chat";
+import { ChatType, Message } from "@/types/chat";
 
 interface ChatStreamProps {
-  chatType: "CHAT" | "AGENT";
+  chatType: ChatType;
   messages: Message[];
   origin: string;
   token: string;
@@ -17,12 +17,13 @@ export async function chatStream({
 }: ChatStreamProps) {
   const endpoint =
     chatType === "CHAT" ? "openrouter/deepseek" : "openrouter/gpt-mini";
-  const response = await fetch(`/api/${endpoint}`, {
+  const response = await fetch(`/api/chat/${endpoint}`, {
     method: "POST",
     body: JSON.stringify({ messages, origin, token }),
   });
 
   if (!response.ok || !response.body) {
+    console.log(response);
     throw new Error("Failed to fetch chat stream");
   }
 
