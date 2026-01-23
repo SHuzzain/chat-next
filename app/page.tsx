@@ -32,6 +32,7 @@ export default function ChatPage({ searchParams }: ChatPageProps) {
 
   const [isLoading, setLoading] = useState(false);
   const [isClosed, setIsClosed] = useState(true);
+  const [chatType, setChatType] = useState<"CHAT" | "AGENT">("CHAT")
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -74,6 +75,7 @@ export default function ChatPage({ searchParams }: ChatPageProps) {
     // 3️⃣ Stream assistant response
     try {
       await chatStream({
+        chatType,
         messages: sendMessages,
         origin,
         token,
@@ -112,7 +114,7 @@ export default function ChatPage({ searchParams }: ChatPageProps) {
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="flex flex-col h-screen w-full overflow-hidden bg-slate-300/20 backdrop-blur-sm border-4 rounded-2xl border-white"
           >
-            <ChatHeader onClose={() => setIsClosed(true)} />
+            <ChatHeader onClose={() => setIsClosed(true)} chatType={chatType} setChatType={setChatType} />
             <ChatBody messages={messages} isLoading={isLoading} messagesEndRef={messagesEndRef} />
             <ChatInput handleSubmit={handleSubmit} isLoading={isLoading} input={input} setInput={setInput} />
           </motion.div>

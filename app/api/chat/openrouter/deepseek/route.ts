@@ -1,5 +1,5 @@
 import { stepCountIs, streamText } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 
 import { SYSTEM_PROMPT } from "@/lib/prompt";
 import { getTools } from "@/actions/get-tools";
@@ -12,14 +12,18 @@ interface ChatBody {
   token: string;
 }
 
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
+
 export async function POST(req: Request) {
   try {
     const body: ChatBody = await req.json();
     const { messages, origin, token } = body;
-    const tools = await getTools(origin, token);
+    // const tools = await getTools(origin, token);
 
     const result = streamText({
-      model: openai("gpt-4.1-nano"),
+      model: openrouter.chat("deepseek/deepseek-r1-0528:free"),
       system: SYSTEM_PROMPT,
       messages: messages
         .filter((message) => message.content)
@@ -27,8 +31,9 @@ export async function POST(req: Request) {
           role: message.role,
           content: message.content,
         })),
-      tools: tools,
-      stopWhen: stepCountIs(5),
+      // tools: tools,
+      maxOutputTokens: 1000,
+      // stopWhen: stepCountIs(5),
     });
 
     return result.toTextStreamResponse();

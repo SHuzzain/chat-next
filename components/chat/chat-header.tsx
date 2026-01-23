@@ -2,12 +2,15 @@ import Image from 'next/image'
 import React from 'react'
 import { Button } from '../ui/button'
 import { XIcon } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 interface ChatHeaderProps {
     onClose?: () => void;
+    setChatType: (type: "CHAT" | "AGENT") => void;
+    chatType: "CHAT" | "AGENT";
 }
 
-const ChatHeader = ({ onClose }: ChatHeaderProps) => {
+const ChatHeader = ({ onClose, chatType, setChatType }: ChatHeaderProps) => {
     return (
         <div className="flex items-center justify-between  bg-white p-2">
             {/* Logo */}
@@ -16,13 +19,26 @@ const ChatHeader = ({ onClose }: ChatHeaderProps) => {
                     <Image src="/champ.svg" alt="Logo" width={40} height={40} className='object-contain mb-1' />
                 </figure>
 
-                <section>
-                    <h5 className='text-lg font-semibold'>
-                        Mind Champs
-                    </h5>
-                    <p className='text-xs text-muted-foreground font-medium'>
-                        Digital chatbot interface.
-                    </p>
+                <section className='flex gap-4 items-center'>
+                    <div>
+                        <h5 className='text-lg font-semibold'>
+                            Mind Champs
+                        </h5>
+                        <p className='text-xs text-muted-foreground font-medium'>
+                            Digital chatbot interface.
+                        </p>
+                    </div>
+
+
+                    <Select value={chatType} onValueChange={setChatType}>
+                        <SelectTrigger className="w-32">
+                            <SelectValue placeholder="Chat" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="CHAT">Chat</SelectItem>
+                            <SelectItem value="AGENT">Agent</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </section>
             </div>
 
