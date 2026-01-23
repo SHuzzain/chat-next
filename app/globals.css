@@ -120,6 +120,11 @@
   --chat-border-glass: rgba(255, 255, 255, 0.2);
 }
 
+html,
+body {
+  height: 100%;
+}
+
 @layer utilities {
   .glass {
     @apply backdrop-blur-xl border-white/20;
