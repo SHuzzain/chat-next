@@ -120,7 +120,7 @@ export default function EmbedPage({ searchParams }: EmbedPageProps) {
             animate={{ x: 0, y: 0, opacity: 1 }}
             exit={{ x: 100, y: 100, opacity: 0 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="flex flex-col h-full w-full overflow-hidden bg-slate-300/20 backdrop-blur-sm border-4 rounded-2xl border-white"
+            className="flex flex-col h-full w-full overflow-hidden bg-slate-200/20 backdrop-blur-sm border-4 rounded-2xl border-slate-100/80"
           >
             <ChatHeader onClose={() => setIsClosed(true)} />
             <ChatBody messages={messages} isLoading={isLoading} messagesEndRef={messagesEndRef} />
@@ -147,7 +147,7 @@ export default function EmbedPage({ searchParams }: EmbedPageProps) {
           >
             <button
               onClick={() => setIsClosed(false)}
-              className="bg-white shadow-lg p-3 rounded-full hover:scale-110 transition-transform"
+              className="bg-white shadow-lg p-3 rounded-full hover:scale-110 transition-transform border border-blue-100/50"
             >
               <Image src="/champ.svg" width={40} height={40} alt="Chat" />
             </button>
