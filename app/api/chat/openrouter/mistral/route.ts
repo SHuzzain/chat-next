@@ -17,6 +17,12 @@ const openrouter = createOpenRouter({
 
 export async function POST(req: Request) {
   try {
+    if (!process.env.OPENROUTER_API_KEY) {
+      return NextResponse.json(
+        { success: false, error: "OpenRouter API key is not configured" },
+        { status: 401 },
+      );
+    }
     const body: ChatBody = await req.json();
     const { messages } = body;
     console.log({ messages });
