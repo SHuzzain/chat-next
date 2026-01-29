@@ -16,7 +16,7 @@ export async function chatStream({
   onChunk,
 }: ChatStreamProps) {
   const endpoint =
-    chatType === "CHAT" ? "openrouter/mistral" : "gpt";
+    chatType === "CHAT" ? "openrouter/mistral" : "openrouter/gpt-mini";
   const response = await fetch(`/api/chat/${endpoint}`, {
     method: "POST",
     body: JSON.stringify({ messages, origin, token }),
