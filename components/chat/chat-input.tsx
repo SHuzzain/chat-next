@@ -41,7 +41,7 @@ const ChatInput = ({ handleSubmit, isLoading, input, setInput, chatType, setChat
                     <Input onChange={(e) => setInput(e.target.value)} value={input} className='bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0' placeholder='Chat here...' />
                     <section className='flex items-center gap-2'>
 
-                        <DropdownMenu modal={false}>
+                        {/* <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
                                 <Button
                                     type="button"
@@ -61,7 +61,7 @@ const ChatInput = ({ handleSubmit, isLoading, input, setInput, chatType, setChat
                                     </DropdownMenuRadioGroup>
                                 </DropdownMenuGroup>
                             </DropdownMenuContent>
-                        </DropdownMenu>
+                        </DropdownMenu> */}
 
 
 

@@ -9,15 +9,13 @@ interface ChatStreamProps {
 }
 
 export async function chatStream({
-  chatType,
   messages,
   origin,
   token,
   onChunk,
 }: ChatStreamProps) {
-  const endpoint =
-    chatType === "CHAT" ? "openrouter/mistral" : "openrouter/gpt-mini";
-  const response = await fetch(`/api/chat/${endpoint}`, {
+
+  const response = await fetch(`/api/chat/gpt`, {
     method: "POST",
     body: JSON.stringify({ messages, origin, token }),
   });

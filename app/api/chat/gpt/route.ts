@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     const tools = await getTools(origin, token);
 
     const result = streamText({
-      model: openai("gpt-4.1-nano"),
+      model: openai("gpt-4o-mini"),
       system: SYSTEM_PROMPT,
       messages: messages
         .filter((message) => message.content)
