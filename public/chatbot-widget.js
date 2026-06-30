@@ -6,6 +6,7 @@
     const chatbotUrl = config.chatbotUrl;
     const token = config.token || '';
     const origin = config.origin || '';
+    const role = config.role || '';
     
     
     // Create widget container
@@ -19,7 +20,8 @@
     // Create iframe
     const iframe = document.createElement('iframe');
     iframe.id = widgetId;
-    iframe.src = `${chatbotUrl}/?token=${token}&origin=${origin}`;
+    const roleParam = role ? `&role=${encodeURIComponent(role)}` : '';
+    iframe.src = `${chatbotUrl}/?token=${encodeURIComponent(token)}&origin=${encodeURIComponent(origin)}${roleParam}`;
     iframe.style.cssText = `
       position: fixed;
       bottom: 20px;

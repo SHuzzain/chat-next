@@ -18,11 +18,12 @@ type EmbedPageProps = {
   searchParams: Promise<{
     token: string;
     origin: string;
+    role?: string;
   }>;
 };
 
 export default function EmbedPage({ searchParams }: EmbedPageProps) {
-  const { token, origin } = use(searchParams);
+  const { token, origin, role } = use(searchParams);
 
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -89,6 +90,7 @@ export default function EmbedPage({ searchParams }: EmbedPageProps) {
         messages: sendMessages,
         origin,
         token,
+        role,
         onChunk: (text, done) => {
           setLoading(false);
           setMessages((prev) =>

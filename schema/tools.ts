@@ -8,6 +8,13 @@ export type JsonSchemaProperty = {
     required?: string[];
     description?: string;
     format?: string;
+    // Common constraints (backend may send these)
+    minimum?: number;
+    maximum?: number;
+    minLength?: number;
+    maxLength?: number;
+    minItems?: number;
+    maxItems?: number;
 };
 
 
@@ -24,6 +31,12 @@ export const jsonSchemaPropertySchema: z.ZodType<JsonSchemaProperty> =
                 required: z.array(z.string()).optional(),
                 description: z.string().optional(),
                 format: z.string().optional(),
+                minimum: z.number().optional(),
+                maximum: z.number().optional(),
+                minLength: z.number().optional(),
+                maxLength: z.number().optional(),
+                minItems: z.number().optional(),
+                maxItems: z.number().optional(),
             })
             .loose()
     );
@@ -45,12 +58,14 @@ export const toolJsonSchema = z
         inputSchema: inputSchemaSchema,
         pathParams: z.array(z.string()).optional(),
         queryParams: z.array(z.string()).optional(),
+        responseDescription: z.string().optional(),
     })
     .loose();
 
 export const mcpToolGroupSchema = z
     .object({
         name: z.string(),
+        description: z.string().optional(),
         tools: z.array(toolJsonSchema),
     })
     .loose();

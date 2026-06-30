@@ -10,13 +10,14 @@ interface ChatBody {
   messages: Message[];
   origin: string;
   token: string;
+  role?: string;
 }
 
 export async function POST(req: Request) {
   try {
     const body: ChatBody = await req.json();
-    const { messages, origin, token } = body;
-    const tools = await getTools(origin, token);
+    const { messages, origin, token, role } = body;
+    const tools = await getTools(origin, token, role);
 
     const result = streamText({
       model: openai("gpt-4o-mini"),

@@ -5,6 +5,7 @@ interface ChatStreamProps {
   messages: Message[];
   origin: string;
   token: string;
+  role?: string;
   onChunk: (text: string, done: boolean) => void;
 }
 
@@ -12,12 +13,13 @@ export async function chatStream({
   messages,
   origin,
   token,
+  role,
   onChunk,
 }: ChatStreamProps) {
 
   const response = await fetch(`/api/chat/gpt`, {
     method: "POST",
-    body: JSON.stringify({ messages, origin, token }),
+    body: JSON.stringify({ messages, origin, token, role }),
   });
 
   if (!response.ok || !response.body) {
