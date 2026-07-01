@@ -24,7 +24,11 @@ function requiredParamHint(key: string, endpoint: string): string {
   if (key === "courseId" && endpoint.includes("liveclasses")) {
     return " Call learning.get_my_intakes (preferred for the user) or search_intake_by_name first to resolve the class/intake name to a MongoId.";
   }
-  if (key === "id" && (endpoint.includes("get-course-units") || endpoint.includes("get-unit-complete-percent"))) {
+  if (
+    key === "id" &&
+    (endpoint.includes("get-course-units") ||
+      endpoint.includes("get-unit-complete-percent"))
+  ) {
     return " Use learning.get_my_intakes or search_intake_by_name (or get_course_units) to get the correct course/unit ID first.";
   }
   return "";
@@ -58,7 +62,7 @@ export function httpExecute({
     const idValidationError = validateMongoIdArgs(
       args,
       MONGO_ID_ARG_KEYS,
-      requiredParams
+      requiredParams,
     );
     if (idValidationError) {
       return {
@@ -145,9 +149,9 @@ export function httpExecute({
     }
 
     const result = await response.json();
-    const trimmed = trimToolResult(result, endpoint);
-    console.log("result: ", trimmed);
+    // const trimmed = trimToolResult(result, endpoint);
+    console.log("result: ", result);
 
-    return trimmed;
+    return result;
   };
 }
