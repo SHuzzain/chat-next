@@ -3,6 +3,7 @@
 import {
   useState,
   useEffect,
+  useLayoutEffect,
   useRef,
   use,
   startTransition,
@@ -58,11 +59,16 @@ export default function EmbedPage({ searchParams }: EmbedPageProps) {
   }, [messages]);
 
 
+  // Track if we've applied an explicit theme (from param or postMessage)
+  const themeInitializedRef = useRef(false);
+
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === "theme") {
-        console.log("Received theme message:", event.data.theme);
-        setTheme(event.data.theme === "dark" ? "dark" : "light");
+        const incoming = String(event.data.theme || "").toLowerCase().trim();
+        const normalized = incoming === "dark" ? "dark" : "light";
+        setTheme(normalized);
+        themeInitializedRef.current = true;
       }
 
       if (event.data?.type === "open") {
@@ -78,6 +84,19 @@ export default function EmbedPage({ searchParams }: EmbedPageProps) {
 
     return () => window.removeEventListener("message", handleMessage);
   }, [setTheme]);
+
+  // Apply INITIAL theme from parent (via query param) ONLY ONCE (useLayoutEffect for earlier apply).
+  // This prevents the creation-time param from overriding later live switches from postMessage.
+  useLayoutEffect(() => {
+    if (themeParam && !themeInitializedRef.current) {
+      const incoming = String(themeParam).toLowerCase().trim();
+      const normalized = incoming === "dark" ? "dark" : "light";
+      setTheme(normalized);
+      themeInitializedRef.current = true;
+    }
+  }, [themeParam, setTheme]);
+
+  // Also ensure that if a theme message arrives very early, the flag is respected.
 
   // useEffect(() => {
   //   if (themeParam) {
@@ -153,7 +172,7 @@ export default function EmbedPage({ searchParams }: EmbedPageProps) {
             animate={{ x: 0, y: 0, opacity: 1 }}
             exit={{ x: 100, y: 100, opacity: 0 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="flex flex-col h-full w-full overflow-hidden bg-slate-200/20 backdrop-blur-sm border-4 rounded-2xl border-slate-100/80 dark:border-slate-800"
+            className="flex flex-col h-full w-full overflow-hidden bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-4 rounded-2xl border-slate-200 dark:border-slate-700 shadow-xl"
           >
             <ChatHeader onClose={() => setIsClosed(true)} />
             <ChatBody messages={messages} isLoading={isLoading} messagesEndRef={messagesEndRef} />

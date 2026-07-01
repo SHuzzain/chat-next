@@ -6,7 +6,9 @@
   const token = config.token || "";
   const origin = config.origin || "";
   const role = config.role || "";
-  const theme = config.theme || "light";
+  const rawTheme = config.theme || "light";
+  const theme =
+    String(rawTheme).toLowerCase().trim() === "dark" ? "dark" : "light";
 
   const widgetId = "mindchamps-chatbot-widget";
 
@@ -18,10 +20,11 @@
   iframe.id = widgetId;
 
   const roleParam = role ? `&role=${encodeURIComponent(role)}` : "";
+  const themeParam = `&theme=${encodeURIComponent(theme)}`;
 
   iframe.src = `${chatbotUrl}/?token=${encodeURIComponent(
     token,
-  )}&origin=${encodeURIComponent(origin)}${roleParam}`;
+  )}&origin=${encodeURIComponent(origin)}${roleParam}${themeParam}`;
 
   iframe.style.cssText = `
     position: fixed;
@@ -32,6 +35,8 @@
     border: none;
     z-index: 999999;
     background: transparent !important;
+    border-radius: 9999px;
+    overflow: hidden;
   `;
 
   iframe.allow = "clipboard-read; clipboard-write";
@@ -47,6 +52,8 @@
     if (event.data.type === "resize") {
       iframe.style.width = event.data.width || "360px";
       iframe.style.height = event.data.height || "500px";
+      iframe.style.borderRadius =
+        event.data.width === "56px" ? "9999px" : "16px";
     }
 
     if (event.data.type === "close") {
@@ -55,6 +62,7 @@
 
     if (event.data.type === "open") {
       iframe.style.display = "block";
+      iframe.style.borderRadius = "16px";
     }
   });
 

@@ -79,6 +79,10 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Custom Chat UI Variables (light) */
+  --chat-bg-glass: rgba(255, 255, 255, 0.9);
+  --chat-border-glass: rgba(0, 0, 0, 0.08);
 }
 
 .dark {
@@ -116,14 +120,15 @@
 
   /* Custom Chat UI Variables */
   --chat-primary: oklch(65% 0.25 295); /* Vibrant Violet */
-  --chat-bg-glass: rgba(255, 255, 255, 0.7);
-  --chat-border-glass: rgba(255, 255, 255, 0.2);
+  --chat-bg-glass: rgba(15, 15, 20, 0.92);
+  --chat-border-glass: rgba(255, 255, 255, 0.12);
 }
 
 html,
 body {
   height: 100%;
-  background-color: transparent;
+  background-color: transparent !important;
+  background: transparent !important;
 }
 
 @layer utilities {
@@ -154,6 +159,6 @@ body {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-transparent text-foreground;
+    @apply bg-transparent! text-foreground;
   }
 }
