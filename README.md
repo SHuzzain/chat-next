@@ -34,3 +34,58 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Production with PM2
+
+For self-hosting in production (e.g. on a VPS), use [PM2](https://pm2.keymetrics.io/) to manage the Next.js server process.
+
+### Setup
+
+1. Install dependencies and build:
+
+   ```bash
+   pnpm install
+   pnpm build
+   ```
+
+2. (First time on server) Optionally install PM2 globally:
+
+   ```bash
+   pnpm add -g pm2
+   # or npm install -g pm2
+   ```
+
+3. Start with PM2:
+
+   ```bash
+   pnpm pm2:start
+   ```
+
+### Useful PM2 commands (via npm scripts)
+
+| Command            | Description                     |
+|--------------------|---------------------------------|
+| `pnpm pm2:start`   | Start the app with PM2                 |
+| `pnpm pm2:stop`    | Stop the app                           |
+| `pnpm pm2:restart` | Hard restart the app                   |
+| `pnpm pm2:reload`  | Zero-downtime reload (cluster mode)    |
+| `pnpm pm2:delete`  | Remove from PM2                        |
+| `pnpm pm2:logs`    | View logs                              |
+| `pnpm pm2:status`  | Show process status                    |
+| `pnpm pm2:save`    | Save current PM2 process list          |
+| `pnpm deploy:prod` | Build + startOrRestart with PM2        |
+
+### PM2 ecosystem
+
+Configuration is in `ecosystem.config.js`. Default runs 1 instance on port 3606.
+
+To enable auto-start on server reboot:
+
+```bash
+pm2 startup
+pm2 save
+```
+
+See the [PM2 documentation](https://pm2.keymetrics.io/docs/usage/startup/) for full setup (systemd etc.).
+
+> Note: The default `pnpm start` / `npm start` still works without PM2. PM2 adds monitoring, auto-restart, logs, and clustering support.
