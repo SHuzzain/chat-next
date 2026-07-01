@@ -1,3 +1,5 @@
+import { ensureAbsoluteUrl } from "./utils";
+
 type HttpExecuteArgs = {
   endpoint: string;
   method: "GET" | "POST" | "PUT" | "DELETE";
@@ -21,11 +23,15 @@ export function httpExecute({
     console.log("args: ", args);
     console.log("endpoint: ", endpoint);
     console.log("method: ", method);
-    console.log("token: ", token);
     console.log("origin: ", origin);
+    console.log("token: ", token ? "[REDACTED]" : "missing");
     console.log("pathParams: ", pathParams);
     console.log("queryParams: ", queryParams);
-    let url = `${origin}${endpoint}`;
+
+    const resolvedOrigin = ensureAbsoluteUrl(origin);
+    let url = `${resolvedOrigin}${endpoint}`;
+
+    console.log("resolved origin: ", resolvedOrigin);
 
     const query = new URLSearchParams();
 
@@ -56,6 +62,8 @@ export function httpExecute({
     if (query.size > 0) {
       url += `?${query.toString()}`;
     }
+
+    console.log("final url: ", url);
 
     const response = await fetch(url, {
       method,

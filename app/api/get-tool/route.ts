@@ -1,4 +1,5 @@
 import { backendResponseSchema } from "@/schema/tools";
+import { ensureAbsoluteUrl } from "@/lib/utils";
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
 
@@ -13,7 +14,8 @@ export async function GET(req: NextRequest) {
         { status: 400 },
       );
     }
-    const response = await fetch(`${origin}/mcp-tools/config`, {
+    const resolvedOrigin = ensureAbsoluteUrl(origin);
+    const response = await fetch(`${resolvedOrigin}/mcp-tools/config`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
