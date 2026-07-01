@@ -14,11 +14,11 @@ interface ChatBodyProps {
 const ChatBody = ({ messages, isLoading, messagesEndRef }: ChatBodyProps) => {
 
     return (
-        <ScrollArea className="flex-1 px-4 py-6  h-[calc(100vh-10rem)] ">
+        <ScrollArea className="flex-1 px-4 py-6 h-[calc(100vh-10rem)]">
             {messages.length === 0 && (
                 <div className="flex items-center justify-center h-full flex-1">
                     <div className="text-center">
-                        <p className="text-accent-foreground/80 text-lg font-semibold">Hello, How can I help you?</p>
+                        <p className="text-foreground/80 text-lg font-semibold">Hello, How can I help you?</p>
                     </div>
                 </div>
             )}
@@ -33,7 +33,7 @@ const ChatBody = ({ messages, isLoading, messagesEndRef }: ChatBodyProps) => {
                         <div
                             className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-lg ${isUser
                                 ? "bg-blue-500 text-white"
-                                : "bg-white/90 backdrop-blur-sm text-gray-800"
+                                : "bg-card/95 backdrop-blur-sm text-card-foreground border border-border"
                                 }`}
                         >
                             <p className="text-sm whitespace-pre-wrap wrap-break-word">
@@ -46,11 +46,11 @@ const ChatBody = ({ messages, isLoading, messagesEndRef }: ChatBodyProps) => {
 
             {isLoading && (
                 <div className="flex justify-start">
-                    <div className="bg-white/90 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-lg">
+                    <div className="bg-card/95 text-card-foreground border border-border backdrop-blur-sm rounded-2xl px-4 py-3 shadow-lg">
                         <div className="flex gap-1">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
                         </div>
                     </div>
                 </div>

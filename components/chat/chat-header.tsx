@@ -8,7 +8,7 @@ interface ChatHeaderProps {
 
 const ChatHeader = ({ onClose }: ChatHeaderProps) => {
     return (
-        <div className="flex items-center justify-between  bg-white p-2">
+        <div className="flex items-center justify-between bg-card text-card-foreground p-2 border-b border-border">
             {/* Logo */}
             <div className='flex items-center gap-5'>
                 <figure className='bg-white shadow-lg p-2 rounded-full flex items-center justify-center'>
@@ -31,6 +31,7 @@ const ChatHeader = ({ onClose }: ChatHeaderProps) => {
 
             <Button
                 size={"icon"}
+                variant="secondary"
                 className='rounded-full size-8'
                 onClick={onClose}
             >

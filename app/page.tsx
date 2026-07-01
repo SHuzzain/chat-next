@@ -13,17 +13,20 @@ import { ChatType, Message } from "@/types/chat";
 import { chatStream } from "@/actions/chat-stream";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
+import { useTheme } from "next-themes";
 
 type EmbedPageProps = {
   searchParams: Promise<{
     token: string;
     origin: string;
     role?: string;
+    theme?: string;
   }>;
 };
 
 export default function EmbedPage({ searchParams }: EmbedPageProps) {
-  const { token, origin, role } = use(searchParams);
+  const { token, origin, role, theme: themeParam } = use(searchParams);
+  const { setTheme } = useTheme();
 
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -53,6 +56,34 @@ export default function EmbedPage({ searchParams }: EmbedPageProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === "theme") {
+        console.log("Received theme message:", event.data.theme);
+        setTheme(event.data.theme === "dark" ? "dark" : "light");
+      }
+
+      if (event.data?.type === "open") {
+        setIsClosed(false);
+      }
+
+      if (event.data?.type === "close") {
+        setIsClosed(true);
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+
+    return () => window.removeEventListener("message", handleMessage);
+  }, [setTheme]);
+
+  // useEffect(() => {
+  //   if (themeParam) {
+  //     = themeParam === "dark" ? "normal" : "light";
+  //   }
+  // }, [themeParam, setTheme]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     setLoading(true);
@@ -122,7 +153,7 @@ export default function EmbedPage({ searchParams }: EmbedPageProps) {
             animate={{ x: 0, y: 0, opacity: 1 }}
             exit={{ x: 100, y: 100, opacity: 0 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="flex flex-col h-full w-full overflow-hidden bg-slate-200/20 backdrop-blur-sm border-4 rounded-2xl border-slate-100/80"
+            className="flex flex-col h-full w-full overflow-hidden bg-slate-200/20 backdrop-blur-sm border-4 rounded-2xl border-slate-100/80 dark:border-slate-800"
           >
             <ChatHeader onClose={() => setIsClosed(true)} />
             <ChatBody messages={messages} isLoading={isLoading} messagesEndRef={messagesEndRef} />
