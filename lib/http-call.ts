@@ -68,6 +68,7 @@ export function httpExecute({
 
     if (!response.ok) {
       const text = await response.text();
+      console.log("text: ", text);
       throw new Error(text || response.statusText);
     }
     const result = await response.json();
