@@ -9,7 +9,7 @@ type McpToolGroup = z.infer<typeof backendResponseSchema>["mcpTools"][number];
 function buildToolDescription(
   groupDescription: string | undefined,
   toolDescription: string,
-  responseDescription?: string
+  responseDescription?: string,
 ): string {
   const parts = [
     groupDescription,
@@ -24,7 +24,7 @@ export async function loadMcpFromConfig(
   baseUrl: string,
   group: McpToolGroup,
   token: string,
-  role?: string
+  role?: string,
 ) {
   const toolsMaps: Record<string, Tool> = {};
 
@@ -33,7 +33,7 @@ export async function loadMcpFromConfig(
       description: buildToolDescription(
         group.description,
         def.description,
-        def.responseDescription
+        def.responseDescription,
       ),
       inputSchema: jsonSchemaToZod(def.inputSchema),
       execute: httpExecute({
@@ -44,7 +44,6 @@ export async function loadMcpFromConfig(
         role,
         pathParams: def.pathParams,
         queryParams: def.queryParams,
-        requiredParams: def.inputSchema.required,
       }),
     });
   }
