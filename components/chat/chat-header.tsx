@@ -12,13 +12,13 @@ const ChatHeader = ({ onClose }: ChatHeaderProps) => {
             {/* Logo */}
             <div className='flex items-center gap-5'>
                 <figure className='bg-white shadow-lg p-2 rounded-full flex items-center justify-center'>
-                    <Image src="/champ.svg" alt="Logo" width={40} height={40} className='object-contain mb-1' />
+                    <Image src="https://demoste.champslms.com/uploads/system/100-st-engineering-logo-1770120367567.png" alt="Logo" width={40} height={40} className='object-contain' />
                 </figure>
 
                 <section className='flex gap-4 items-center flex-wrap'>
                     <div>
                         <h5 className='text-lg font-semibold'>
-                            Mind Champs
+                            EnterpriseLMS
                         </h5>
                         <p className='text-xs text-muted-foreground font-medium'>
                             Digital chatbot interface.

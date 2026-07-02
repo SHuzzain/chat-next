@@ -201,7 +201,7 @@ export default function EmbedPage({ searchParams }: EmbedPageProps) {
               onClick={() => setIsClosed(false)}
               className="bg-white shadow-lg p-3 rounded-full hover:scale-110 transition-transform border border-blue-100/50"
             >
-              <Image src="/champ.svg" width={40} height={40} alt="Chat" />
+              <Image src="https://demoste.champslms.com/uploads/system/100-st-engineering-logo-1770120367567.png" width={40} height={40} alt="Chat" />
             </button>
           </motion.div>
         )}
