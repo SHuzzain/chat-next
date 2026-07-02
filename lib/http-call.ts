@@ -7,6 +7,7 @@ type HttpExecuteArgs = {
   origin: string;
   pathParams?: string[];
   queryParams?: string[];
+  bodyParams?: string[];
   role?: string;
 };
 
@@ -17,6 +18,7 @@ export function httpExecute({
   origin,
   pathParams,
   queryParams,
+  bodyParams,
   role,
 }: HttpExecuteArgs) {
   return async (args: Record<string, unknown>) => {
@@ -27,6 +29,7 @@ export function httpExecute({
     console.log("token: ", token ? "[REDACTED]" : "missing");
     console.log("pathParams: ", pathParams);
     console.log("queryParams: ", queryParams);
+    console.log("bodyParams: ", bodyParams);
 
     const resolvedOrigin = ensureAbsoluteUrl(origin);
     let url = `${resolvedOrigin}${endpoint}`;
@@ -34,6 +37,7 @@ export function httpExecute({
     console.log("resolved origin: ", resolvedOrigin);
 
     const query = new URLSearchParams();
+    const body: Record<string, unknown> = {};
 
     /** -------- Path params -------- */
     if (pathParams) {
@@ -59,20 +63,36 @@ export function httpExecute({
       }
     }
 
+    /** -------- Body params -------- */
+    if (bodyParams) {
+      for (const key of bodyParams) {
+        if (Object.prototype.hasOwnProperty.call(args, key)) {
+          body[key] = args[key];
+        }
+      }
+    }
+
     if (query.size > 0) {
       url += `?${query.toString()}`;
     }
 
     console.log("final url: ", url);
+    console.log("body: ", body);
 
-    const response = await fetch(url, {
+    const requestInit: RequestInit = {
       method,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
         ...(role ? { Role: role } : {}),
       },
-    });
+    };
+
+    if (method !== "GET" && bodyParams) {
+      requestInit.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(url, requestInit);
 
     if (!response.ok) {
       const text = await response.text();

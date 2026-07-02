@@ -1,8 +1,19 @@
 import { z } from "zod";
 
+const jsonSchemaTypeSchema = z.enum([
+    "string",
+    "number",
+    "boolean",
+    "array",
+    "object",
+    "null",
+]);
+
+export type JsonSchemaType = z.infer<typeof jsonSchemaTypeSchema>;
+
 export type JsonSchemaProperty = {
-    type: "string" | "number" | "boolean" | "array" | "object";
-    enum?: string[];
+    type: JsonSchemaType | JsonSchemaType[];
+    enum?: Array<string | number | boolean | null>;
     properties?: Record<string, JsonSchemaProperty>;
     items?: JsonSchemaProperty;
     required?: string[];
@@ -17,13 +28,24 @@ export type JsonSchemaProperty = {
     maxItems?: number;
 };
 
-
 export const jsonSchemaPropertySchema: z.ZodType<JsonSchemaProperty> =
     z.lazy(() =>
         z
             .object({
-                type: z.enum(["string", "number", "boolean", "array", "object"]),
-                enum: z.array(z.string()).optional(),
+                type: z.union([
+                    jsonSchemaTypeSchema,
+                    z.array(jsonSchemaTypeSchema).min(1),
+                ]),
+                enum: z
+                    .array(
+                        z.union([
+                            z.string(),
+                            z.number(),
+                            z.boolean(),
+                            z.null(),
+                        ])
+                    )
+                    .optional(),
                 properties: z
                     .record(z.string(), jsonSchemaPropertySchema)
                     .optional(),
@@ -58,6 +80,7 @@ export const toolJsonSchema = z
         inputSchema: inputSchemaSchema,
         pathParams: z.array(z.string()).optional(),
         queryParams: z.array(z.string()).optional(),
+        bodyParams: z.array(z.string()).optional(),
         responseDescription: z.string().optional(),
     })
     .loose();

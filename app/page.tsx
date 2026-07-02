@@ -172,7 +172,7 @@ export default function EmbedPage({ searchParams }: EmbedPageProps) {
             animate={{ x: 0, y: 0, opacity: 1 }}
             exit={{ x: 100, y: 100, opacity: 0 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="flex flex-col h-full w-full overflow-hidden bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-4 rounded-2xl border-slate-200 dark:border-slate-700 shadow-xl"
+            className="flex flex-col h-full w-full overflow-hidden bg-white/95 dark:bg-[#14222f] backdrop-blur-xl border-4 rounded-2xl border-slate-200 dark:border-slate-700 shadow-xl"
           >
             <ChatHeader onClose={() => setIsClosed(true)} />
             <ChatBody messages={messages} isLoading={isLoading} messagesEndRef={messagesEndRef} />

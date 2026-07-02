@@ -44,6 +44,7 @@ export async function loadMcpFromConfig(
         role,
         pathParams: def.pathParams,
         queryParams: def.queryParams,
+        bodyParams: def.bodyParams,
       }),
     });
   }
