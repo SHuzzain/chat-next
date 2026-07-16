@@ -49,17 +49,31 @@ export const advanceFilterSchema = <TShape extends z.ZodRawShape>(
   return z.object({
     field: schema
       .keyof()
-      .describe("The field name means frontend table column name"),
+      .describe(
+        "The frontend table column to filter. Use one of the available schema field names.",
+      ),
 
     type: filterTypeSchema.describe(
-      "The filter operation type. Range means date [startDate, endDate]",
+      [
+        "The comparison operator to apply.",
+        "Use 'Range' when filtering between two values.",
+        "For dates, provide [startDate, endDate] in ISO format.",
+        "For numbers, provide [minimumValue, maximumValue], for example [20, 90].",
+      ].join(" "),
     ),
 
     value: z
       .array(filterValueSchema)
       .optional()
       .describe(
-        "The frontend table column value. Range means date [startDate, endDate]",
+        [
+          "The value or values used by the filter.",
+          "For single-value operators such as 'Equals' or 'Contains', provide one value.",
+          "For 'Range' or 'Between', provide exactly two values.",
+          "Date example: ['2026-07-01T00:00:00.000Z', '2026-07-31T23:59:59.999Z'].",
+          "Number example: [20, 90].",
+          "For 'Include', provide the list of accepted values.",
+        ].join(" "),
       ),
   }) as AdvanceFilterSchema<TShape>;
 };
