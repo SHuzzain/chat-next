@@ -7,10 +7,10 @@
   const origin = config.origin || "";
   const role = config.role || "";
   const rawTheme = config.theme || "light";
+  const widgetId = config.widgetId;
   const theme =
     String(rawTheme).toLowerCase().trim() === "dark" ? "dark" : "light";
 
-  const widgetId = "mindchamps-chatbot-widget";
 
   if (document.getElementById(widgetId)) {
     return;
@@ -34,7 +34,6 @@
     height: 80px;
     border: none;
     z-index: 999999;
-    background: transparent !important;
     border-radius: 9999px;
     overflow: hidden;
   `;

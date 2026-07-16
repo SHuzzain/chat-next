@@ -16,7 +16,6 @@ export async function chatStream({
   role,
   onChunk,
 }: ChatStreamProps) {
-
   const response = await fetch(`/api/chat/gpt`, {
     method: "POST",
     body: JSON.stringify({ messages, origin, token, role }),

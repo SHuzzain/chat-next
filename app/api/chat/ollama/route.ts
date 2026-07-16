@@ -1,10 +1,10 @@
+// we need to create a route that will handle the chat with the ollama model
+import { NextRequest, NextResponse } from "next/server";
 import { stepCountIs, streamText } from "ai";
-import { openai } from "@ai-sdk/openai";
-
+import { createOllama } from "ai-sdk-ollama";
 import { SYSTEM_PROMPT } from "@/lib/prompt";
-import { NextResponse } from "next/server";
-import { Message } from "@/types/chat";
 import { createMcpTools } from "@/mcptools";
+import { Message } from "@/types/chat";
 
 interface ChatBody {
   messages: Message[];
@@ -13,13 +13,17 @@ interface ChatBody {
   role?: string;
 }
 
-export async function POST(req: Request) {
+const ollama = createOllama({
+  baseURL: "https://aidev-api.champslms.com/ollama",
+});
+
+export async function POST(req: NextRequest) {
   try {
     const body: ChatBody = await req.json();
     const { messages } = body;
 
     const result = streamText({
-      model: openai("gpt-4o-mini"),
+      model: ollama("mistral-small3.2:latest"),
       system: SYSTEM_PROMPT,
       messages: messages
         .filter((message) => message.content)

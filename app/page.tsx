@@ -31,13 +31,14 @@ export default function EmbedPage({ searchParams }: EmbedPageProps) {
 
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
   const [isLoading, setLoading] = useState(false);
   const [isClosed, setIsClosed] = useState(true);
   const [chatType, setChatType] = useState<ChatType>("CHAT");
 
-  // Notify parent window of size changes
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const themeInitializedRef = useRef(false);
+
+
   useEffect(() => {
     const notifyParent = () => {
       if (window.parent && window.parent !== window) {
@@ -59,8 +60,8 @@ export default function EmbedPage({ searchParams }: EmbedPageProps) {
   }, [messages]);
 
 
-  // Track if we've applied an explicit theme (from param or postMessage)
-  const themeInitializedRef = useRef(false);
+
+
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -85,8 +86,7 @@ export default function EmbedPage({ searchParams }: EmbedPageProps) {
     return () => window.removeEventListener("message", handleMessage);
   }, [setTheme]);
 
-  // Apply INITIAL theme from parent (via query param) ONLY ONCE (useLayoutEffect for earlier apply).
-  // This prevents the creation-time param from overriding later live switches from postMessage.
+
   useLayoutEffect(() => {
     if (themeParam && !themeInitializedRef.current) {
       const incoming = String(themeParam).toLowerCase().trim();
@@ -95,14 +95,6 @@ export default function EmbedPage({ searchParams }: EmbedPageProps) {
       themeInitializedRef.current = true;
     }
   }, [themeParam, setTheme]);
-
-  // Also ensure that if a theme message arrives very early, the flag is respected.
-
-  // useEffect(() => {
-  //   if (themeParam) {
-  //     = themeParam === "dark" ? "normal" : "light";
-  //   }
-  // }, [themeParam, setTheme]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     setLoading(true);
