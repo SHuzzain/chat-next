@@ -1,12 +1,16 @@
 import { ToolSet } from "ai";
-import { courseCentreMcpZodTools } from "./course-centre-mcp";
-import { userMcpZodTools } from "./user-mcp";
+import { createSandboxTools } from "@/lib/sandbox-tools";
+import { courseCentreMcpZodTools } from "./course-centres";
+import { createInteractiveHumanTools } from "./interactive-ui-mcp";
+import { unitMcpZodTools } from "./units";
+import { userMcpZodTools } from "./users";
 
 type ToolFactory = (origin: string, token: string) => ToolSet;
 
 const mcpRegistry = {
   user: userMcpZodTools,
   course_centre: courseCentreMcpZodTools,
+  unit: unitMcpZodTools,
 } satisfies Record<string, ToolFactory>;
 
 function namespaceTools(namespace: string, tools: ToolSet): ToolSet {
@@ -25,6 +29,7 @@ function namespaceTools(namespace: string, tools: ToolSet): ToolSet {
   return namespacedTools;
 }
 
+/** LMS MCP tools only (namespaced). */
 export function createMcpTools(origin: string, token: string): ToolSet {
   const tools: ToolSet = {};
 
@@ -36,4 +41,18 @@ export function createMcpTools(origin: string, token: string): ToolSet {
   }
 
   return tools;
+}
+
+/**
+ * Full tool set for chat routes:
+ * - namespaced MCP tools
+ * - render_widget (declarative human UI)
+ * - execute_js (Vercel Sandbox)
+ */
+export function createChatTools(origin: string, token: string): ToolSet {
+  return {
+    ...createMcpTools(origin, token),
+    ...createInteractiveHumanTools(),
+    ...createSandboxTools(),
+  };
 }

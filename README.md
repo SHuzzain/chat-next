@@ -1,5 +1,35 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Interactive tools & Vercel Sandbox
+
+Chat tools include:
+
+| Tool | Purpose |
+|------|---------|
+| LMS MCP tools (`user_*`, `course_centre_*`, …) | Host app data |
+| `render_widget` | Declarative human-in-the-loop widgets (select, table, form, dates, confirmation) |
+| `execute_js` | Isolated JS in [Vercel Sandbox](https://vercel.com/docs/sandbox) for math / JSON transforms |
+
+### Sandbox setup
+
+1. Enable Sandbox on your Vercel team/project.
+2. For local dev, authenticate so the SDK can create sandboxes (see Vercel Sandbox docs — typically `vercel link` + OIDC / project tokens).
+3. Without credentials, `execute_js` returns a soft error and the model should continue without it.
+
+Never put auth tokens or passwords into sandbox `code`.
+
+### Dynamic widgets (`render_widget`)
+
+When the user must pick, confirm, or browse LMS data, the model calls `render_widget` with a Zod-validated config (no URLs, tokens, or HTML). The chat UI renders a trusted widget; async data loads via `POST /api/widget-data` using the embed `token` + `origin` from searchParams (`WidgetAuthContext`). The proxy only appends allowlisted relative paths from the server resource registry.
+
+**Origin resolution:** embed `searchParams.origin` (preferred) → else `LMS_API_ORIGIN` env fallback.
+
+**Continuation after submit:** `AssistantProvider` uses AI SDK  
+`sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls`  
+so that after the widget calls `addResult` with `{ widgetId, action, value }`, a new request is sent and the model can call the next tool. Without that, selection only updates local state and **no next tool runs**.
+
+Works on **AWS VPS** the same as Vercel for the widget flow (only `execute_js` needs Vercel Sandbox credentials).
+
 ## Getting Started
 
 First, run the development server:

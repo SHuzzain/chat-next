@@ -52,15 +52,18 @@
       iframe.style.width = event.data.width || "360px";
       iframe.style.height = event.data.height || "500px";
       iframe.style.borderRadius =
-        event.data.width === "56px" ? "9999px" : "16px";
+        event.data.width === "56px" ? "50%" : "16px";
     }
 
     if (event.data.type === "close") {
-      iframe.style.display = "none";
+      iframe.style.width = "80px";
+      iframe.style.height = "80px";
+      iframe.style.borderRadius = "50%";
     }
 
     if (event.data.type === "open") {
-      iframe.style.display = "block";
+      iframe.style.width = "360px";
+      iframe.style.height = "500px";
       iframe.style.borderRadius = "16px";
     }
   });
@@ -69,17 +72,15 @@
     ...config,
 
     open: function () {
-      iframe.style.display = "block";
       iframe.contentWindow.postMessage({ type: "open" }, chatbotOrigin);
     },
 
     close: function () {
-      iframe.style.display = "none";
       iframe.contentWindow.postMessage({ type: "close" }, chatbotOrigin);
     },
 
     toggle: function () {
-      if (iframe.style.display === "none") {
+      if (iframe.style.width === "80px") {
         this.open();
       } else {
         this.close();

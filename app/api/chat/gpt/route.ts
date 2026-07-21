@@ -1,37 +1,41 @@
-import { stepCountIs, streamText } from "ai";
+import {
+  convertToModelMessages,
+  createUIMessageStreamResponse,
+  stepCountIs,
+  streamText,
+  toUIMessageStream,
+  type UIMessage,
+} from "ai";
 import { openai } from "@ai-sdk/openai";
+import { NextRequest, NextResponse } from "next/server";
 
 import { SYSTEM_PROMPT } from "@/lib/prompt";
-import { NextResponse } from "next/server";
-import { Message } from "@/types/chat";
-import { createMcpTools } from "@/mcptools";
+import { createChatTools } from "@/mcptools";
 
 interface ChatBody {
-  messages: Message[];
+  messages: UIMessage[];
   origin: string;
   token: string;
   role?: string;
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body: ChatBody = await req.json();
-    const { messages } = body;
+    const { messages, origin, token } = body;
 
     const result = streamText({
       model: openai("gpt-4o-mini"),
       system: SYSTEM_PROMPT,
-      messages: messages
-        .filter((message) => message.content)
-        .map((message) => ({
-          role: message.role,
-          content: message.content,
-        })),
-      tools: createMcpTools(body.origin, body.token),
-      stopWhen: stepCountIs(5),
+      messages: await convertToModelMessages(messages),
+      tools: createChatTools(origin, token),
+      // Allow: search → optional sandbox → render_widget → detail tool → answer
+      stopWhen: stepCountIs(8),
     });
 
-    return result.toTextStreamResponse();
+    return createUIMessageStreamResponse({
+      stream: toUIMessageStream({ stream: result.stream }),
+    });
   } catch (error) {
     console.error(error);
     return NextResponse.json(

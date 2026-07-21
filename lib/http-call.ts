@@ -1,13 +1,17 @@
 import { ensureAbsoluteUrl } from "./utils";
 
-type HttpExecuteArgs = {
+/** LMS route wiring shared by agent MCP tools and widget-data resources. */
+export type HttpCallDefinition = {
   endpoint: string;
   method: "GET" | "POST" | "PUT" | "DELETE";
+  pathParams?: readonly string[];
+  queryParams?: readonly string[];
+  bodyParams?: readonly string[];
+};
+
+type HttpExecuteArgs = HttpCallDefinition & {
   token: string;
   origin: string;
-  pathParams?: string[];
-  queryParams?: string[];
-  bodyParams?: string[];
   role?: string;
 };
 
@@ -100,8 +104,61 @@ export function httpExecute({
       throw new Error(text || response.statusText);
     }
     const result = await response.json();
-    console.log("result: ", result);
+    console.dir({ result }, { depth: null });
 
     return result;
   };
+}
+
+
+interface ToolDescriptionOptions {
+  resourceName: string;
+  purpose: string;
+  searchableFields?: string[];
+  supportedFilters?: string[];
+  includedData?: string[];
+  specificEntityToolName?: string;
+  additionalInstructions?: string[];
+}
+
+export function createToolDescription({
+  resourceName,
+  purpose,
+  searchableFields = [],
+  supportedFilters = [],
+  includedData = [],
+  specificEntityToolName,
+  additionalInstructions = [],
+}: ToolDescriptionOptions): string {
+  const description = [
+    purpose,
+
+    `Use this tool to retrieve a paginated list of ${resourceName}.`,
+
+    searchableFields.length > 0
+      ? `Use textSearch to search supported fields such as ${searchableFields.join(
+          ", ",
+        )}.`
+      : undefined,
+
+    supportedFilters.length > 0
+      ? `Apply supported filters when requested: ${supportedFilters.join(", ")}.`
+      : undefined,
+
+    includedData.length > 0
+      ? `The response can include ${includedData.join(", ")}.`
+      : undefined,
+
+    specificEntityToolName
+      ? `For a report about one specific entity whose ID is unknown, resolve the entity first, then use ${specificEntityToolName}.`
+      : undefined,
+
+    "Request only the fields required to answer the user.",
+    "For large result sets, render an async-table instead of listing all records in chat.",
+    "Do not fetch every page through repeated model tool calls; let the frontend widget handle pagination, searching, filtering, and sorting.",
+
+    ...additionalInstructions,
+  ];
+
+  return description.filter(Boolean).join(" ");
 }

@@ -1,0 +1,22 @@
+// AUTO-GENERATED from Mongoose model "CentreType" — do not edit by hand
+// Run: npm run generate:mcp-schemas -- --models CentreType
+import { z } from "zod";
+import { dateSchema, objectIdSchema } from "@/mcptools/shared";
+
+const sourceOrginSchema = z.enum(["ELMSS"]);
+const statusSchema = z.enum(["ACTIVE", "INACTIVE", "DELETED"]);
+
+export const centreTypeSchema = z.object({
+  _id: objectIdSchema.optional(),
+  code: z.string().optional(),
+  createdAt: dateSchema.optional(),
+  creator: objectIdSchema,
+  description: z.string(),
+  name: z.string(),
+  sourceOrgin: sourceOrginSchema.optional(),
+  status: statusSchema.optional(),
+  updatedAt: dateSchema.optional(),
+  __v: z.number().optional(),
+});
+
+export type CentreType = z.infer<typeof centreTypeSchema>;
