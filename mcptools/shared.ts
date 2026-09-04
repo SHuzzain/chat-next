@@ -148,7 +148,7 @@ export const advanceFilterSchema = <TShape extends z.ZodRawShape>(
       [
         "The comparison operator to apply.",
         "Use 'Range' when filtering between two values.",
-        "For dates, provide [startDate, endDate] in ISO format.",
+        "For dates, provide [startDate, endDate] in DD/MM/YYYY format.",
         "For numbers, provide [minimumValue, maximumValue], for example [20, 90].",
       ].join(" "),
     ),
@@ -160,11 +160,12 @@ export const advanceFilterSchema = <TShape extends z.ZodRawShape>(
         [
           "The value or values used by the filter.",
           "For single-value operators such as 'Equals' or 'Contains', provide one value.",
-          "For 'Range' or 'Between', provide exactly two values.",
-          "Date example: ['2026-07-01T00:00:00.000Z', '2026-07-31T23:59:59.999Z'].",
+          "For 'Range', provide exactly two values numbers.",
+          "For 'Between', provide exactly two date values in DD/MM/YYYY format.",
+          "Date example: ['2026/07/01', '2026/07/31'].",
           "Number example: [20, 90].",
           "For 'Include', provide the list of accepted values.",
-        ].join(" "),
+        ].join(" ")
       ),
   });
 };

@@ -1,3 +1,4 @@
+import { ChatToolHeaders } from "@/types/chat";
 import { ensureAbsoluteUrl } from "./utils";
 
 /** LMS route wiring shared by agent MCP tools and widget-data resources. */
@@ -9,33 +10,24 @@ export type HttpCallDefinition = {
   bodyParams?: readonly string[];
 };
 
-type HttpExecuteArgs = HttpCallDefinition & {
-  token: string;
-  origin: string;
-  role?: string;
-};
+type HttpExecuteArgs = HttpCallDefinition & ChatToolHeaders;
 
 export function httpExecute({
   endpoint,
   method,
-  token,
-  origin,
-  pathParams,
-  queryParams,
-  bodyParams,
-  role,
+  ...headers
 }: HttpExecuteArgs) {
   return async (args: Record<string, unknown>) => {
     console.log("args: ", args);
     console.log("endpoint: ", endpoint);
     console.log("method: ", method);
-    console.log("origin: ", origin);
-    console.log("token: ", token ? "[REDACTED]" : "missing");
-    console.log("pathParams: ", pathParams);
-    console.log("queryParams: ", queryParams);
-    console.log("bodyParams: ", bodyParams);
+    console.log("origin: ", headers.origin);
+    console.log("token: ", headers.token ? "[REDACTED]" : "missing");
+    console.log("pathParams: ", headers.pathParams);
+    console.log("queryParams: ", headers.queryParams);
+    console.log("bodyParams: ", headers.bodyParams);
 
-    const resolvedOrigin = ensureAbsoluteUrl(origin);
+    const resolvedOrigin = ensureAbsoluteUrl(headers.origin);
     let url = `${resolvedOrigin}${endpoint}`;
 
     console.log("resolved origin: ", resolvedOrigin);
@@ -44,8 +36,8 @@ export function httpExecute({
     const body: Record<string, unknown> = {};
 
     /** -------- Path params -------- */
-    if (pathParams) {
-      for (const key of pathParams) {
+    if (headers.pathParams) {
+      for (const key of headers.pathParams) {
         const value = args[key];
 
         if (value === undefined) {
@@ -57,8 +49,8 @@ export function httpExecute({
     }
 
     /** -------- Query params -------- */
-    if (queryParams) {
-      for (const key of queryParams) {
+    if (headers.queryParams) {
+      for (const key of headers.queryParams) {
         const value = args[key];
 
         if (value !== undefined && value !== null) {
@@ -68,8 +60,8 @@ export function httpExecute({
     }
 
     /** -------- Body params -------- */
-    if (bodyParams) {
-      for (const key of bodyParams) {
+    if (headers.bodyParams) {
+      for (const key of headers.bodyParams) {
         if (Object.prototype.hasOwnProperty.call(args, key)) {
           body[key] = args[key];
         }
@@ -87,12 +79,12 @@ export function httpExecute({
       method,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        ...(role ? { Role: role } : {}),
+        Authorization: `Bearer ${headers.token}`,
+        ...(headers.role ? { Role: headers.role } : {}),
       },
     };
 
-    if (method !== "GET" && bodyParams) {
+    if (method !== "GET" && headers.bodyParams) {
       requestInit.body = JSON.stringify(body);
     }
 

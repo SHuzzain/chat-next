@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const { messages } = body;
 
     const result = streamText({
-      model: ollama("mistral-small3.2:latest"),
+      model: ollama("mistral"),
       system: SYSTEM_PROMPT,
       messages: messages
         .filter((message) => message.content)
@@ -31,7 +31,11 @@ export async function POST(req: NextRequest) {
           role: message.role,
           content: message.content,
         })),
-      tools: createChatTools(body.origin, body.token),
+      tools: createChatTools({
+        origin: body.origin,
+        token: body.token,
+        role: body.role || "",
+      }),
       stopWhen: stepCountIs(8),
     });
 

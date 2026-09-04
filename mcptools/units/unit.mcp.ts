@@ -8,8 +8,9 @@ import {
   responseWithPaginationSchema,
 } from "@/mcptools/shared";
 import * as ToolSchemas from "./unit.tool-schemas";
+import { ChatToolHeaders } from "@/types/chat";
 
-export const unitMcpZodTools = (origin: string, token: string): ToolSet => {
+export const unitMcpZodTools = (headers: ChatToolHeaders): ToolSet => {
   return {
     /** -------------------- list_test_reports -------------------- */
     list_test_reports: tool({
@@ -33,10 +34,9 @@ export const unitMcpZodTools = (origin: string, token: string): ToolSet => {
           .describe("Optional course centre MongoId filter."),
       }),
       execute: httpExecute({
+        ...headers,
         endpoint: "/report/get-report-test",
         method: "POST",
-        origin,
-        token,
         queryParams: [
           "gridType",
           "page",

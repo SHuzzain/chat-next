@@ -8,44 +8,32 @@ import {
   useChatRuntime,
 } from "@assistant-ui/react-ai-sdk";
 
-import { RenderWidgetToolUI } from "@/components/assistant-ui/tool-uis";
-import { WidgetAuthProvider } from "@/components/dynamic-widgets/widget-auth-context";
+import { ChatToolHeaders } from "@/types/chat";
 
 type AssistantProviderProps = {
-  origin: string;
-  token: string;
-  role?: string;
+  headers: ChatToolHeaders;
   children: ReactNode;
 };
 
-export function AssistantProvider({
-  origin,
-  token,
-  role,
-  children,
-}: AssistantProviderProps) {
+export function AssistantProvider({ headers, children }: AssistantProviderProps) {
   const transport = useMemo(
     () =>
       new AssistantChatTransport({
         api: "/api/chat/gpt",
-        body: { origin, token, role },
+        body: headers,
       }),
-    [origin, token, role],
+    [headers],
   );
 
-  // Critical for human tools (render_widget): after addResult / addToolOutput,
-  // automatically POST messages back so the model continues (next tool / answer).
+
   const runtime = useChatRuntime({
     transport,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
   });
 
   return (
-    <WidgetAuthProvider value={{ token, origin, role }}>
-      <AssistantRuntimeProvider runtime={runtime}>
-        <RenderWidgetToolUI />
-        {children}
-      </AssistantRuntimeProvider>
-    </WidgetAuthProvider>
+    <AssistantRuntimeProvider runtime={runtime}>
+      {children}
+    </AssistantRuntimeProvider>
   );
 }

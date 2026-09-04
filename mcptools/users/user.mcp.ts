@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createToolDescription, httpExecute } from "@/lib/http-call";
 import {
   advanceFilterParamsSchema,
+  advanceFilterSelectSchema,
   objectIdSchema,
   reponseSchema,
   responseWithPaginationSchema,
@@ -13,20 +14,30 @@ import {
   listUserReportsHttp,
   particularUserReportsHttp,
 } from "./user.http";
+import { ChatToolHeaders } from "@/types/chat";
+import { defineToolkit } from "@assistant-ui/react";
 
-export const userMcpZodTools = (origin: string, token: string): ToolSet => {
+export const userMcpZodTools = (headers: ChatToolHeaders): ToolSet => {
   return {
     /** -------------------- get_my_info -------------------- */
     get_my_info: tool({
-      description: "Get current logged-in user information",
-      inputSchema: z.object({}),
-      execute: httpExecute({
-        endpoint: "/users/me?ignoreUserType=YES",
-        method: "GET",
-        origin,
-        token,
+      description: [
+        "Get current logged-in user information",
+        "Return only the fields needed to identify the user, preferably _id, fullName, and email.",
+        "Use this tool to get the current logged-in user information",
+      ].join(" "),
+      inputSchema: z.object({
+        advanceFilterSelect: advanceFilterSelectSchema(
+          ToolSchemas.getMyInfoOutputSchema,
+        ),
       }),
-      outputSchema: reponseSchema(ToolSchemas.getMyInfoOutputSchema),
+      execute: httpExecute({
+        ...headers,
+        endpoint: "/users/myself",
+        method: "POST",
+        bodyParams: ["advanceFilterSelect"],
+      }),
+      outputSchema: reponseSchema(ToolSchemas.getMyInfoOutputSchema.partial()),
     }),
 
     /** -------------------- get_user_config -------------------- */
@@ -94,9 +105,8 @@ export const userMcpZodTools = (origin: string, token: string): ToolSet => {
       execute: httpExecute({
         endpoint: "/users/get-user-config",
         method: "GET",
-        origin,
-        token,
         queryParams: ["key"],
+        ...headers,
       }),
       outputSchema: z.object({
         key: z.string().describe("The configuration key"),
@@ -118,11 +128,10 @@ export const userMcpZodTools = (origin: string, token: string): ToolSet => {
       ),
       execute: httpExecute({
         ...findUsersHttp,
-        origin,
-        token,
+        ...headers,
       }),
       outputSchema: responseWithPaginationSchema(
-        z.array(ToolSchemas.getUsersItemSchema),
+        z.array(ToolSchemas.getUsersItemSchema.partial()),
       ),
     }),
 
@@ -147,11 +156,10 @@ export const userMcpZodTools = (origin: string, token: string): ToolSet => {
       ),
       execute: httpExecute({
         ...listUserReportsHttp,
-        origin,
-        token,
+        ...headers,
       }),
       outputSchema: responseWithPaginationSchema(
-        z.array(ToolSchemas.getAllUserReportsItemSchema),
+        z.array(ToolSchemas.getAllUserReportsItemSchema.partial()),
       ),
     }),
 
@@ -175,11 +183,10 @@ export const userMcpZodTools = (origin: string, token: string): ToolSet => {
         }),
       execute: httpExecute({
         ...particularUserReportsHttp,
-        origin,
-        token,
+        ...headers,
       }),
       outputSchema: responseWithPaginationSchema(
-        z.array(ToolSchemas.getUserReportsItemSchema),
+        z.array(ToolSchemas.getUserReportsItemSchema.partial()),
       ),
     }),
   };

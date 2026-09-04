@@ -1,30 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-
-import { httpExecute } from "@/lib/http-call";
-import { normalizeProjectFields } from "@/lib/dynamic-widgets/normalize-project-fields";
-import { widgetDataRequestSchema } from "@/lib/dynamic-widgets/schemas";
-import { WIDGET_RESOURCES } from "@/mcptools/widget-resources";
-
-class WidgetDataError extends Error {
-  status: number;
-
-  constructor(message: string, status = 400) {
-    super(message);
-    this.name = "WidgetDataError";
-    this.status = status;
-  }
-}
 
 async function readJsonBody(req: NextRequest): Promise<unknown> {
   const text = await req.text();
   if (!text.trim()) {
-    throw new WidgetDataError("Request body is required", 400);
+    return NextResponse.json(
+      { error: "Request body is required" },
+      { status: 400 },
+    );
   }
   try {
     return JSON.parse(text) as unknown;
   } catch {
-    throw new WidgetDataError("Request body must be valid JSON", 400);
+    return NextResponse.json(
+      { error: "Request body must be valid JSON" },
+      { status: 400 },
+    );
   }
 }
 
@@ -49,24 +39,14 @@ export async function POST(req: NextRequest) {
 
     const body = json as Record<string, unknown>;
     const headerOrigin = req.headers.get("x-lms-origin")?.trim();
-    const parsed = widgetDataRequestSchema.safeParse({
+    const parsed = {
       ...body,
-      origin: body.origin || headerOrigin,
-    });
+      origin: body.origin || headerOrigin || "",
+    };
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Invalid request", details: z.treeifyError(parsed.error) },
-        { status: 400 },
-      );
-    }
+    console.log({ parsed });
 
-    const { resource: resourceName, origin: requestOrigin } = parsed.data;
-    const resource = WIDGET_RESOURCES[resourceName];
-
-    const origin =
-      (requestOrigin || "").trim() ||
-      (process.env.LMS_API_ORIGIN || "").trim();
+    const origin = (parsed.origin as string)?.trim() || "";
     if (!origin) {
       return NextResponse.json(
         {
@@ -77,57 +57,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const page = parsed.data.pagination?.page ?? 1;
-    const pageSize = Math.min(
-      Math.max(parsed.data.pagination?.pageSize ?? 20, 1),
-      resource.maxPageSize,
-    );
-
-    // Trust widget/AI args — httpExecute only forwards keys listed on the resource.
-    const args: Record<string, unknown> = {
-      ...(parsed.data.pathParams ?? {}),
-      ...(parsed.data.params ?? {}),
-      ...(parsed.data.body ?? {}),
-      page,
-      rowPerPage: pageSize,
-    };
-
-    if (parsed.data.search) {
-      args.textSearch = parsed.data.search;
-    }
-    if (parsed.data.sort) {
-      args.order = parsed.data.sort.field;
-      args.orderBy = parsed.data.sort.direction;
-    }
-    if (parsed.data.select?.length) {
-      args.advanceFilterSelect = normalizeProjectFields(parsed.data.select);
-    }
-
-    const execute = httpExecute({
-      endpoint: resource.endpoint,
-      method: resource.method,
-      token,
-      origin,
-      pathParams: [...resource.pathParams],
-      queryParams: [...resource.queryParams],
-      bodyParams: [...resource.bodyParams],
-    });
-
-    const raw = await execute(args);
-    return NextResponse.json(resource.mapResponse(raw, page, pageSize));
+    return NextResponse.json({ data: "mock data" }, { status: 200 });
   } catch (error) {
-    if (error instanceof WidgetDataError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: error.status },
-      );
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    console.error("[widget-data]", error);
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Internal server error",
-      },
-      { status: 502 },
-    );
   }
 }

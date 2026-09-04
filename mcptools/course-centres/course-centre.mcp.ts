@@ -8,11 +8,9 @@ import {
 } from "@/mcptools/shared";
 import * as ToolSchemas from "./course-centre.tool-schemas";
 import { findCentresHttp } from "./course-centre.http";
+import { ChatToolHeaders } from "@/types/chat";
 
-export const courseCentreMcpZodTools = (
-  origin: string,
-  token: string,
-): ToolSet => {
+export const courseCentreMcpZodTools = (headers: ChatToolHeaders): ToolSet => {
   return {
     find_centres: tool({
       description: [
@@ -32,8 +30,7 @@ export const courseCentreMcpZodTools = (
       }),
       execute: httpExecute({
         ...findCentresHttp,
-        origin,
-        token,
+        ...headers,
       }),
       outputSchema: responseWithPaginationSchema(
         ToolSchemas.getCourseCentresItemSchema,

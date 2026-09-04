@@ -1,49 +1,131 @@
-import { tool, type ToolSet } from "ai";
-
-import {
-  renderWidgetToolInputSchema,
-  type DynamicWidget,
-} from "@/lib/dynamic-widgets/schemas";
+"use generative";
+import { defineToolkit, humanTool } from "@assistant-ui/react";
+import z from "zod";
 
 export const RENDER_WIDGET_TOOL_NAME = "render_widget";
 
 /** @deprecated Use render_widget */
 export const ASK_USER_CHOICE_TOOL_NAME = RENDER_WIDGET_TOOL_NAME;
 
-export type RenderWidgetArgs = DynamicWidget;
+const httpMethodSchema = z.enum(["GET", "POST"]);
 
-/**
- * Human-in-the-loop UI tool — no server `execute`.
- * The model supplies widget config as tool args; the client Tool UI renders
- * trusted widgets and completes via `addResult` after the user submits.
- *
- * Do NOT add `execute`: that would finish the tool immediately, disable the
- * widget (search/pagination), and skip waiting for the user.
- *
- * inputSchema must be a root Zod object (not discriminatedUnion) — OpenAI
- * rejects union schemas as `type: "None"`.
- */
-export function createInteractiveHumanTools(): ToolSet {
-  return {
-    [RENDER_WIDGET_TOOL_NAME]: tool({
-      description: [
-        "Render a trusted interactive widget in the chat.",
-        "Use this tool when the user must select an entity, provide structured input, confirm an action, or view paginated data.",
+const endpointSchema = z
+  .object({
+    endpoint: z
+      .string()
+      .min(1)
+      .describe(
+        "API endpoint used to load selectable options. Example: /users/get-users.",
+      ),
 
-        "Use async-select or async-multi-select when a required entity ID is unknown or the user provided only a name.",
-        "Use async-table only when all required identifiers and filters are already known.",
-        "Use radio-group, checkbox-group, or option-cards for small static option sets.",
-        "Use confirmation for yes/no decisions.",
-        "Use dynamic-form for multi-field input.",
+    method: httpMethodSchema.describe("HTTP method used when loading options."),
 
-        "The frontend handles remote loading, searching, filtering, sorting, and pagination without additional model calls.",
-        "Use only supported resource names and valid field paths.",
-        "Never provide API URLs, credentials, headers, HTML, JavaScript, or other executable content.",
+    pathParams: z
+      .array(z.string())
+      .default([])
+      .describe(
+        "Argument names that must be inserted into endpoint path placeholders.",
+      ),
 
-        "After submission, use the compact widget result to continue the workflow.",
-      ].join(" "),
+    queryParams: z
+      .array(z.string())
+      .default([])
+      .describe("Argument names sent as URL query parameters."),
 
-      inputSchema: renderWidgetToolInputSchema,
-    }),
-  };
+    bodyParams: z
+      .array(z.string())
+      .default([])
+      .describe("Argument names sent inside the request body."),
+  })
+  .strict();
+
+const asyncSelectDataSourceSchema = z
+  .object({
+    endpointDetails: endpointSchema,
+
+    valueField: z
+      .string()
+      .default("_id")
+      .describe(
+        "Field from each API result used as the selected option value.",
+      ),
+
+    labelField: z
+      .string()
+      .default("fullName")
+      .describe(
+        "Field from each API result displayed as the primary option label.",
+      ),
+
+    descriptionField: z
+      .string()
+      .optional()
+      .describe(
+        "Optional field displayed as secondary text, such as email or code.",
+      ),
+
+    responseDataPath: z
+      .string()
+      .optional()
+      .describe(
+        "Dot-path containing the result array. Example: data.rows or data.",
+      ),
+
+    staticParams: z
+      .record(z.string(), z.unknown())
+      .optional()
+      .describe("Fixed parameters always included when calling the endpoint."),
+  })
+  .strict();
+
+export function createInteractiveHumanTools() {
+  return defineToolkit({
+    async_select: {
+      description: "Select an option from a list of options",
+      execute: humanTool(),
+      parameters: z.object({
+        title: z
+          .string()
+          .min(1)
+          .describe("Title displayed above the select component."),
+
+        description: z
+          .string()
+          .optional()
+          .describe("Additional instructions displayed to the user."),
+
+        placeholder: z
+          .string()
+          .default("Search and select an option")
+          .describe("Placeholder displayed inside the input."),
+
+        searchPlaceholder: z
+          .string()
+          .optional()
+          .describe("Placeholder displayed while searching."),
+
+        initialSearch: z
+          .string()
+          .optional()
+          .describe("Initial search text used when the widget first loads."),
+
+        searchable: z
+          .boolean()
+          .default(true)
+          .describe("Whether the user can search for options."),
+
+        required: z
+          .boolean()
+          .default(true)
+          .describe("Whether the user must select an option."),
+
+        searchParam: z
+          .string()
+          .default("textSearch")
+          .describe("Parameter name used to send the user's search text."),
+
+        dataSource: asyncSelectDataSourceSchema,
+      }),
+    },
+  });
 }

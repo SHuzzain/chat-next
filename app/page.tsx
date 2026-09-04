@@ -86,7 +86,7 @@ export default function EmbedPage({ searchParams }: EmbedPageProps) {
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-transparent">
-      <AssistantProvider origin={origin} token={token} role={role}>
+      <AssistantProvider headers={{ origin, token, role: role || "" }}>
         <AssistantModal open={open} onOpenChange={handleOpenChange} />
       </AssistantProvider>
     </div>

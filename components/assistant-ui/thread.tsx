@@ -1,5 +1,6 @@
 "use client";
 
+import { ScrollArea as ScrollAreaPrimitive } from "radix-ui"
 import {
   ComposerAddAttachment,
   ComposerAttachments,
@@ -60,6 +61,7 @@ import {
   type FC,
   type PropsWithChildren,
 } from "react";
+import { ScrollBar } from "../ui/scroll-area";
 
 export type ThreadGroupPart = MessagePrimitive.GroupedParts.GroupPart;
 
@@ -111,57 +113,62 @@ const ThreadRoot: FC<{ isEmpty: boolean }> = ({ isEmpty }) => {
   const { Welcome = ThreadWelcome } = useContext(ThreadComponentsContext);
 
   return (
-    <ThreadPrimitive.Root
-      className="aui-root aui-thread-root bg-background @container flex h-full flex-col"
-      style={{
-        ["--thread-max-width" as string]: "100%",
-        ["--composer-bg" as string]:
-          "color-mix(in oklab, var(--color-muted) 30%, var(--color-background))",
-        ["--composer-radius" as string]: "1rem",
-        ["--composer-padding" as string]: "6px",
-      }}
-    >
-      <ThreadPrimitive.Viewport
-        turnAnchor="top"
-        data-slot="aui_thread-viewport"
-        className="relative flex flex-1 flex-col overflow-x-auto overflow-y-scroll scroll-smooth"
+    <ScrollAreaPrimitive.Root asChild>
+      <ThreadPrimitive.Root
+        className="aui-root aui-thread-root bg-background @container flex h-full flex-col"
+        style={{
+          ["--thread-max-width" as string]: "100%",
+          ["--composer-bg" as string]:
+            "color-mix(in oklab, var(--color-muted) 30%, var(--color-background))",
+          ["--composer-radius" as string]: "1rem",
+          ["--composer-padding" as string]: "6px",
+        }}
       >
-        <div
-          className={cn(
-            "mx-auto flex w-full max-w-(--thread-max-width) flex-1 flex-col px-2 pt-2",
-            isEmpty && "justify-center",
-          )}
-        >
-          <AuiIf condition={isNewChatView}>
-            <Welcome />
-          </AuiIf>
-
-          <div
-            data-slot="aui_message-group"
-            className="mb-14 flex flex-col gap-y-6 empty:hidden"
+        <ScrollAreaPrimitive.Viewport className="thread-viewport" asChild>
+          <ThreadPrimitive.Viewport
+            turnAnchor="top"
+            data-slot="aui_thread-viewport"
+            className="relative flex flex-1 flex-col overflow-x-auto overflow-y-scroll scroll-smooth"
           >
-            <ThreadPrimitive.Messages>
-              {() => <ThreadMessage />}
-            </ThreadPrimitive.Messages>
-          </div>
+            <div
+              className={cn(
+                "mx-auto flex w-full max-w-(--thread-max-width) flex-1 flex-col px-2 pt-2",
+                isEmpty && "justify-center",
+              )}
+            >
+              <AuiIf condition={isNewChatView}>
+                <Welcome />
+              </AuiIf>
 
-          <ThreadPrimitive.ViewportFooter
-            className={cn(
-              "aui-thread-viewport-footer bg-background flex flex-col gap-2 overflow-visible pb-2",
-              !isEmpty &&
-              "sticky bottom-0 mt-auto rounded-t-(--composer-radius)",
-            )}
-          >
-            <ThreadScrollToBottom />
-            <ThreadFollowupSuggestions />
-            <Composer />
-            <AuiIf condition={(s) => isNewChatView(s) && s.composer.isEmpty}>
-              <ThreadSuggestions />
-            </AuiIf>
-          </ThreadPrimitive.ViewportFooter>
-        </div>
-      </ThreadPrimitive.Viewport>
-    </ThreadPrimitive.Root>
+              <div
+                data-slot="aui_message-group"
+                className="mb-14 flex flex-col gap-y-6 empty:hidden"
+              >
+                <ThreadPrimitive.Messages>
+                  {() => <ThreadMessage />}
+                </ThreadPrimitive.Messages>
+              </div>
+
+              <ThreadPrimitive.ViewportFooter
+                className={cn(
+                  "aui-thread-viewport-footer bg-background flex flex-col gap-2 overflow-visible pb-2",
+                  !isEmpty &&
+                  "sticky bottom-0 mt-auto rounded-t-(--composer-radius)",
+                )}
+              >
+                <ThreadScrollToBottom />
+                <ThreadFollowupSuggestions />
+                <Composer />
+                <AuiIf condition={(s) => isNewChatView(s) && s.composer.isEmpty}>
+                  <ThreadSuggestions />
+                </AuiIf>
+              </ThreadPrimitive.ViewportFooter>
+            </div>
+          </ThreadPrimitive.Viewport>
+        </ScrollAreaPrimitive.Viewport>
+        <ScrollBar />
+      </ThreadPrimitive.Root>
+    </ScrollAreaPrimitive.Root>
   );
 };
 
@@ -184,7 +191,7 @@ const ThreadScrollToBottom: FC = () => {
         variant="outline"
         className="aui-thread-scroll-to-bottom dark:border-border dark:bg-background dark:hover:bg-accent absolute -top-12 z-10 self-center rounded-full disabled:invisible size-7"
       >
-        <ArrowDownIcon size={24}  />
+        <ArrowDownIcon size={24} />
       </TooltipIconButton>
     </ThreadPrimitive.ScrollToBottom>
   );

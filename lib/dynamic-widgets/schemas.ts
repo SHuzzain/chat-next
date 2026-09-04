@@ -1,9 +1,6 @@
 import { z } from "zod";
 
-import {
-  RESOURCE_NAMES,
-  type ResourceName,
-} from "@/mcptools/widget-resources";
+import { RESOURCE_NAMES, type ResourceName } from "@/mcptools/widget-resources";
 
 export { RESOURCE_NAMES, type ResourceName };
 
@@ -21,11 +18,38 @@ export const staticDataSourceSchema = z.object({
 
 export const remoteDataSourceSchema = z.object({
   source: z.literal("remote"),
-  resource: z.enum(RESOURCE_NAMES),
-  params: z
-    .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]))
-    .default({}),
-  pathParams: z.record(z.string(), z.string()).optional(),
+
+  endpoint: z
+    .string()
+    .describe("The API endpoint used to retrieve the remote data."),
+
+  method: z
+    .enum(["GET", "POST"])
+    .describe("The HTTP method required by the endpoint."),
+
+  pathParams: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe(
+      "Values for path parameters defined in the endpoint. Include only parameters that appear in the endpoint path. For example, if the endpoint is '/report/:userId', provide { userId: '...' }. Do not invent or include additional path parameters.",
+    ),
+
+  queryParams: z
+    .record(
+      z.string(),
+      z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]),
+    )
+    .optional()
+    .describe(
+      "Query parameter values. Choose only supported parameter names and provide values only when they help satisfy the user's request. Do not include unsupported or unnecessary parameters.",
+    ),
+
+  body: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe(
+      "Request body values. Include only supported fields that are relevant to the current operation. Do not invent fields.",
+    ),
 });
 
 export const dataSourceSchema = z.discriminatedUnion("source", [
@@ -34,9 +58,25 @@ export const dataSourceSchema = z.discriminatedUnion("source", [
 ]);
 
 export const optionMappingSchema = z.object({
-  value: z.string().default("_id"),
-  label: z.string().default("fullName"),
-  description: z.string().optional(),
+  value: z
+    .string()
+    .describe(
+      "The canonical value associated with this option. Think about what information the next step in the workflow is most likely to require, and store that value here.",
+    ),
+  // .describe(
+  //   "The actual value that should be returned when the user selects this option. Choose the value that is most appropriate for subsequent tool calls (for example, an ID, email, username, code, slug, or other unique identifier). This value is for the workflow and is not necessarily shown to the user.",
+  // ),
+
+  label: z
+    .string()
+    .describe("The primary text displayed to the user for this option."),
+
+  description: z
+    .string()
+    .optional()
+    .describe(
+      "Optional secondary text that provides additional context to help the user distinguish between similar options.",
+    ),
 });
 
 export const dependsOnSchema = z.object({
@@ -44,6 +84,7 @@ export const dependsOnSchema = z.object({
   paramName: z.string(),
 });
 
+// widget base schema and components
 export const widgetBaseSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
@@ -59,6 +100,7 @@ export const asyncSelectWidgetSchema = widgetBaseSchema.extend({
   searchable: z.boolean().default(true),
   required: z.boolean().default(true),
   dataSource: dataSourceSchema,
+  getOptionKey: z.function(),
   optionMapping: optionMappingSchema.optional(),
 });
 
@@ -96,20 +138,22 @@ export const tableColumnSchema = z.object({
   format: z.enum(["text", "percentage", "date", "number"]).optional(),
 });
 
-export const asyncTableWidgetSchema = widgetBaseSchema.extend({
-  type: z.literal("async-table"),
-  dataSource: remoteDataSourceSchema,
-  select: z.array(z.string()).max(40).optional(),
-  columns: z.array(tableColumnSchema).min(1),
-  pagination: z
-    .object({
-      pageSize: z.number().int().min(1).max(50).default(20),
-    })
-    .optional(),
-  searchable: z.boolean().default(true),
-  exportable: z.boolean().default(false),
-  selectionMode: z.enum(["none", "single", "multi"]).default("none"),
-});
+export const asyncTableWidgetSchema = widgetBaseSchema
+  .omit({ submitLabel: true, cancelLabel: true })
+  .extend({
+    type: z.literal("async-table"),
+    dataSource: remoteDataSourceSchema,
+    select: z.array(z.string()).max(40).optional(),
+    columns: z.array(tableColumnSchema).min(1),
+    pagination: z
+      .object({
+        pageSize: z.number().int().min(1).max(50).default(20),
+      })
+      .optional(),
+    searchable: z.boolean().default(true),
+    exportable: z.boolean().default(false),
+    selectionMode: z.enum(["none", "single", "multi"]).default("none"),
+  });
 
 export const confirmationWidgetSchema = widgetBaseSchema.extend({
   type: z.literal("confirmation"),
@@ -207,148 +251,6 @@ export const WIDGET_TYPES = [
  * and are rejected. Use this flat object for the tool; validate with
  * `dynamicWidgetSchema` in execute / Tool UI.
  */
-export const renderWidgetToolInputSchema = z.object({
-  id: z.string().min(1).describe("Stable widget id for dependsOn / results"),
-  type: z.enum(WIDGET_TYPES).describe("Which trusted widget to render"),
-  title: z.string().min(1),
-  description: z.string().optional(),
-  submitLabel: z.string().optional(),
-  cancelLabel: z.string().optional(),
-  dependsOn: dependsOnSchema.optional(),
-  placeholder: z.string().optional(),
-  searchable: z.boolean().optional(),
-  required: z.boolean().optional(),
-  minSelect: z.number().int().min(0).optional(),
-  maxSelect: z.number().int().min(1).max(50).optional(),
-  // Flat dataSource (avoid nested discriminatedUnion → oneOf)
-  dataSource: z
-    .object({
-      source: z.enum(["static", "remote"]),
-      options: z.array(staticOptionSchema).max(50).optional(),
-      resource: z.enum(RESOURCE_NAMES).optional(),
-      params: z
-        .record(
-          z.string(),
-          z.union([
-            z.string(),
-            z.number(),
-            z.boolean(),
-            z.array(z.string()),
-          ]),
-        )
-        .optional(),
-      pathParams: z.record(z.string(), z.string()).optional(),
-    })
-    .optional(),
-  optionMapping: optionMappingSchema.optional(),
-  select: z.array(z.string()).max(40).optional(),
-  columns: z.array(tableColumnSchema).optional(),
-  pagination: z
-    .object({
-      pageSize: z.number().int().min(1).max(50).optional(),
-    })
-    .optional(),
-  exportable: z.boolean().optional(),
-  selectionMode: z.enum(["none", "single", "multi"]).optional(),
-  message: z.string().optional(),
-  confirmValue: z.record(z.string(), z.unknown()).optional(),
-  minDate: z.string().optional(),
-  maxDate: z.string().optional(),
-  startPlaceholder: z.string().optional(),
-  endPlaceholder: z.string().optional(),
-  // Avoid nested dataSource discriminatedUnion inside fields
-  fields: z
-    .array(
-      z.object({
-        name: z.string().min(1),
-        label: z.string().min(1),
-        type: formFieldTypeSchema,
-        description: z.string().optional(),
-        placeholder: z.string().optional(),
-        required: z.boolean().optional(),
-        defaultValue: z.unknown().optional(),
-        dataSource: z
-          .object({
-            source: z.enum(["static", "remote"]),
-            options: z.array(staticOptionSchema).max(50).optional(),
-            resource: z.enum(RESOURCE_NAMES).optional(),
-            params: z
-              .record(
-                z.string(),
-                z.union([
-                  z.string(),
-                  z.number(),
-                  z.boolean(),
-                  z.array(z.string()),
-                ]),
-              )
-              .optional(),
-            pathParams: z.record(z.string(), z.string()).optional(),
-          })
-          .optional(),
-        optionMapping: optionMappingSchema.optional(),
-        dependsOn: dependsOnSchema.optional(),
-      }),
-    )
-    .max(30)
-    .optional(),
-});
-
-export type RenderWidgetToolInput = z.infer<typeof renderWidgetToolInputSchema>;
-
-/** Normalize tool args into a DynamicWidget (fills defaults, checks variants). */
-export function parseDynamicWidget(input: unknown): DynamicWidget {
-  const loose = renderWidgetToolInputSchema.parse(input);
-  const { type, dataSource, fields, ...rest } = loose;
-
-  const normalizedDataSource =
-    dataSource == null
-      ? undefined
-      : dataSource.source === "static"
-        ? {
-            source: "static" as const,
-            options: dataSource.options ?? [],
-          }
-        : {
-            source: "remote" as const,
-            resource: dataSource.resource ?? "users",
-            params: dataSource.params ?? {},
-            pathParams: dataSource.pathParams,
-          };
-
-  const normalizedFields = fields?.map((field) => {
-    const ds = field.dataSource;
-    return {
-      ...field,
-      required: field.required ?? false,
-      dataSource:
-        ds == null
-          ? undefined
-          : ds.source === "static"
-            ? {
-                source: "static" as const,
-                options: ds.options ?? [],
-              }
-            : {
-                source: "remote" as const,
-                resource: ds.resource ?? "users",
-                params: ds.params ?? {},
-                pathParams: ds.pathParams,
-              },
-    };
-  });
-
-  return dynamicWidgetSchema.parse({
-    ...rest,
-    type,
-    searchable: loose.searchable ?? true,
-    required: loose.required ?? true,
-    exportable: loose.exportable ?? false,
-    selectionMode: loose.selectionMode ?? "none",
-    dataSource: normalizedDataSource,
-    fields: normalizedFields,
-  });
-}
 
 export const renderWidgetResultSchema = z.object({
   kind: z.literal("dynamic-widget"),
@@ -365,41 +267,3 @@ export const widgetSubmissionSchema = z.object({
 });
 
 export type WidgetSubmission = z.infer<typeof widgetSubmissionSchema>;
-
-export const widgetDataRequestSchema = z.object({
-  resource: z.enum(RESOURCE_NAMES),
-  origin: z.string().optional(),
-  pathParams: z.record(z.string(), z.string()).optional(),
-  params: z.record(z.string(), z.unknown()).optional(),
-  body: z.record(z.string(), z.unknown()).optional(),
-  select: z.array(z.string()).optional(),
-  pagination: z
-    .object({
-      page: z.number().int().min(1).default(1),
-      pageSize: z.number().int().min(1).max(50).default(20),
-    })
-    .optional(),
-  search: z.string().optional(),
-  sort: z
-    .object({
-      field: z.string(),
-      direction: z.enum(["asc", "desc"]),
-    })
-    .optional(),
-});
-
-export type WidgetDataRequest = z.infer<typeof widgetDataRequestSchema>;
-
-export const widgetDataResponseSchema = z.object({
-  data: z.array(z.unknown()),
-  pagination: z.object({
-    page: z.number(),
-    pageSize: z.number(),
-    totalItems: z.number(),
-    totalPages: z.number(),
-    hasNextPage: z.boolean(),
-    hasPreviousPage: z.boolean(),
-  }),
-});
-
-export type WidgetDataResponse = z.infer<typeof widgetDataResponseSchema>;
