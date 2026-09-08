@@ -3,9 +3,17 @@ import { z } from "zod";
 import {
   RESOURCE_NAMES,
   type ResourceName,
-} from "@/mcptools/widget-resources";
+} from "@/lib/dynamic-widgets/widget-resources";
 
 export { RESOURCE_NAMES, type ResourceName };
+
+const resourceNameSchema = z
+  .string()
+  .min(1)
+  .refine((value) => !/^https?:\/\//i.test(value), {
+    message: "Must be a resource name, not a URL",
+  })
+  .describe("LMS widget resource name (allowlist will be restored later)");
 
 export const staticOptionSchema = z.object({
   value: z.string(),
@@ -21,7 +29,7 @@ export const staticDataSourceSchema = z.object({
 
 export const remoteDataSourceSchema = z.object({
   source: z.literal("remote"),
-  resource: z.enum(RESOURCE_NAMES),
+  resource: resourceNameSchema,
   params: z
     .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]))
     .default({}),
@@ -225,7 +233,7 @@ export const renderWidgetToolInputSchema = z.object({
     .object({
       source: z.enum(["static", "remote"]),
       options: z.array(staticOptionSchema).max(50).optional(),
-      resource: z.enum(RESOURCE_NAMES).optional(),
+      resource: resourceNameSchema.optional(),
       params: z
         .record(
           z.string(),
@@ -271,7 +279,7 @@ export const renderWidgetToolInputSchema = z.object({
           .object({
             source: z.enum(["static", "remote"]),
             options: z.array(staticOptionSchema).max(50).optional(),
-            resource: z.enum(RESOURCE_NAMES).optional(),
+            resource: resourceNameSchema.optional(),
             params: z
               .record(
                 z.string(),
@@ -367,7 +375,7 @@ export const widgetSubmissionSchema = z.object({
 export type WidgetSubmission = z.infer<typeof widgetSubmissionSchema>;
 
 export const widgetDataRequestSchema = z.object({
-  resource: z.enum(RESOURCE_NAMES),
+  resource: resourceNameSchema,
   origin: z.string().optional(),
   pathParams: z.record(z.string(), z.string()).optional(),
   params: z.record(z.string(), z.unknown()).optional(),

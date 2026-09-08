@@ -10,7 +10,7 @@ import {
   type DynamicWidget,
   type WidgetSubmission,
 } from "@/lib/dynamic-widgets/schemas";
-import { RENDER_WIDGET_TOOL_NAME } from "@/mcptools/interactive-ui-mcp";
+import { RENDER_WIDGET_TOOL_NAME } from "@/lib/dynamic-widgets/render-widget-tool";
 
 function isWidgetSubmission(result: unknown): result is WidgetSubmission {
   return (

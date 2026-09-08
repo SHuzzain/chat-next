@@ -4,7 +4,7 @@ import { z } from "zod";
 import { httpExecute } from "@/lib/http-call";
 import { normalizeProjectFields } from "@/lib/dynamic-widgets/normalize-project-fields";
 import { widgetDataRequestSchema } from "@/lib/dynamic-widgets/schemas";
-import { WIDGET_RESOURCES } from "@/mcptools/widget-resources";
+import { WIDGET_RESOURCES } from "@/lib/dynamic-widgets/widget-resources";
 
 class WidgetDataError extends Error {
   status: number;
@@ -63,6 +63,15 @@ export async function POST(req: NextRequest) {
 
     const { resource: resourceName, origin: requestOrigin } = parsed.data;
     const resource = WIDGET_RESOURCES[resourceName];
+
+    if (!resource) {
+      return NextResponse.json(
+        {
+          error: `Unknown widget resource "${resourceName}". Domain resources will be added later.`,
+        },
+        { status: 404 },
+      );
+    }
 
     const origin =
       (requestOrigin || "").trim() ||

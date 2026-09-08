@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stepCountIs, streamText } from "ai";
 import { createOllama } from "ai-sdk-ollama";
 import { SYSTEM_PROMPT } from "@/lib/prompt";
-import { createChatTools } from "@/mcptools";
+import { createChatTools } from "@/lib/chat-tools";
 import { Message } from "@/types/chat";
 
 interface ChatBody {
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
           role: message.role,
           content: message.content,
         })),
-      tools: createChatTools(body.origin, body.token),
+      tools: await createChatTools(body.origin, body.token),
       stopWhen: stepCountIs(8),
     });
 

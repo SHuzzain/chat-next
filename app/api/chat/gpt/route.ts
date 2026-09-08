@@ -10,7 +10,7 @@ import { openai } from "@ai-sdk/openai";
 import { NextRequest, NextResponse } from "next/server";
 
 import { SYSTEM_PROMPT } from "@/lib/prompt";
-import { createChatTools } from "@/mcptools";
+import { createChatTools } from "@/lib/chat-tools";
 
 interface ChatBody {
   messages: UIMessage[];
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       model: openai("gpt-4o-mini"),
       system: SYSTEM_PROMPT,
       messages: await convertToModelMessages(messages),
-      tools: createChatTools(origin, token),
+      tools: await createChatTools(origin, token),
       // Allow: search → optional sandbox → render_widget → detail tool → answer
       stopWhen: stepCountIs(8),
     });
