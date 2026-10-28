@@ -5,8 +5,16 @@ import { Thread } from "@/components/thread.aui";
 import { ChatThreadProvider } from "@/components/chat-threads";
 import { EveAuthorization } from "@/components/eve-authorization";
 import { LmsSessionProvider } from "@/components/lms-session";
-import { ListWidgetRegistration } from "@/components/widgets/widget-host";
-import { AssistantRuntimeProvider, AuiConfig, Suggestions } from "@assistant-ui/react";
+import {
+  EveWidgetFallback,
+  eveToolkit,
+} from "@/components/widgets/eve-toolkit";
+import {
+  AssistantRuntimeProvider,
+  AuiConfig,
+  Suggestions,
+  Tools,
+} from "@assistant-ui/react";
 import { useEveAgentRuntime } from "@assistant-ui/eve";
 import { useCallback, useRef, useState } from "react";
 
@@ -45,8 +53,13 @@ function EveChat({
     auth: {
       bearer: async () => tokenRef.current,
     },
-    headers: (): Record<string, string> =>
-      roleRef.current ? { "x-lms-role": roleRef.current } : {},
+    headers: (): Record<string, string> => {
+      const headers: Record<string, string> = {
+        "x-client-timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
+      };
+      if (roleRef.current) headers["x-lms-role"] = roleRef.current;
+      return headers;
+    },
     onSessionChange: (session) => onSessionId(session?.sessionId),
     ...(sessionId
       ? { initialSession: { sessionId, streamIndex: 0 }, resume: true }
@@ -57,7 +70,18 @@ function EveChat({
     <AssistantRuntimeProvider
       runtime={runtime}
       config={AuiConfig({
+        tools: Tools({ toolkit: eveToolkit }),
         suggestions: Suggestions([
+          {
+            title: "List active classes",
+            label: "that are running now",
+            prompt: "List active classes.",
+          },
+          {
+            title: "Find a learner",
+            label: "by name or email",
+            prompt: "Find a learner by name or email.",
+          },
           {
             title: "What can you do?",
             label: "in this LMS",
@@ -67,14 +91,13 @@ function EveChat({
       })}
     >
       <LmsSessionProvider token={token} role={role}>
-        <ListWidgetRegistration />
         <EveAuthorization />
         {presentation === "fullscreen" ? (
           <div className="h-full">
-            <Thread />
+            <Thread components={{ ToolFallback: EveWidgetFallback }} />
           </div>
         ) : (
-          <Thread />
+          <Thread components={{ ToolFallback: EveWidgetFallback }} />
         )}
       </LmsSessionProvider>
     </AssistantRuntimeProvider>

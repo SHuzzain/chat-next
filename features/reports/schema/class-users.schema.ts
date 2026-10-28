@@ -3,6 +3,7 @@ import { z } from "zod";
 import { courseCentreRefSchema } from "@/features/centres/schema";
 import {
   ISODateSchema,
+  lmsEmailSchema,
   mongoIdSchema,
   populatedRefSchema,
 } from "@/lib/zod/primitives";
@@ -15,7 +16,7 @@ import { lmsPageSchema } from "@/lib/tools/api-response";
 import {
   CENTRE_ID_DESCRIBE,
   CLASS_ID_DESCRIBE,
-  type FieldAliases,
+  FieldAlias,
 } from "@/lib/tools/api-wire";
 
 const reportStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
@@ -30,37 +31,72 @@ const classUserStatusSchema = z.enum([
 
 const centreOrIdSchema = z.union([mongoIdSchema, courseCentreRefSchema]);
 
-/** Agent-facing row (Eve input filters + final output). */
-const reportClassUsersAgentRowSchema = z.looseObject({
-  _id: mongoIdSchema.optional().describe("Class enrollment record id"),
+const centreNameRefSchema = z.looseObject({
+  _id: mongoIdSchema.optional(),
+  name: z.string().optional(),
+  code: z.string().optional(),
+});
+
+/**
+ * On this endpoint LMS `course` means Class, and `userCourseCentres` means
+ * the learner's Centres for the enrollment.
+ */
+export const classUsersFields = new FieldAlias({
+  class: "course",
+  "class.name": "course.name",
+  "class.code": "course.code",
+  "class._id": "course._id",
+  "class.status": "course.status",
+  "class.centre": "course.courseCentre",
+  userCentre: "userCourseCentres",
+  "userCentre.name": "userCourseCentres.name",
+  "userCentre._id": "userCourseCentres._id",
+  "userCentre.code": "userCourseCentres.code",
+  centre: "courseCentre",
+  "centre.name": "courseCentre.name",
+  "centre._id": "courseCentre._id",
+  "centre.code": "courseCentre.code",
+  "user.centre": "user.courseCentre",
+});
+
+/** Agent-facing row (filters, select, widget roles, final output). */
+export const reportClassUsersRowSchema = z.looseObject({
+  _id: mongoIdSchema
+    .optional()
+    .describe("Class enrollment record id")
+    .meta({ ui: { role: "value" } }),
   progress: z
     .number()
     .min(0)
     .max(100)
     .optional()
-    .describe("Learner progress percentage in the Class"),
+    .describe("Progress %")
+    .meta({ ui: { role: "column" } }),
   status: classUserStatusSchema
     .optional()
     .describe("Enrollment status for this Class"),
   selfLearningProgress: z.number().optional(),
   selfLearningStatus: z.string().optional(),
-  score: z.number().optional(),
+  score: z
+    .number()
+    .optional()
+    .describe("Score %")
+    .meta({ ui: { role: "column" } }),
   userRole: z.string().optional().describe("Role in the Class, e.g. LEARNER"),
-  enrolledDate: ISODateSchema.optional(),
+  enrolledDate: ISODateSchema.optional().describe(
+    "Date the learner enrolled in the Class",
+  ),
   completionDate: ISODateSchema.nullable().optional(),
   intakeTotalHours: z.union([z.number(), z.string()]).optional(),
   isSuspension: z.boolean().optional(),
-  totalCourseTime: z.union([z.number(), z.string()]).optional(),
-  userCentre: z
-    .array(
-      z.looseObject({
-        _id: mongoIdSchema.optional(),
-        name: z.string().optional(),
-        code: z.string().optional(),
-      }),
-    )
+  totalCourseTime: z
+    .union([z.number(), z.string()])
     .optional()
-    .describe("Centres for this enrollment (branch/company). Not a Class."),
+    .describe("Total time the learner spent in the Class"),
+  userCentre: z
+    .array(centreNameRefSchema)
+    .optional()
+    .describe("Centres for this enrollment"),
   class: z
     .looseObject({
       _id: mongoIdSchema.optional(),
@@ -74,8 +110,11 @@ const reportClassUsersAgentRowSchema = z.looseObject({
   user: z
     .looseObject({
       _id: mongoIdSchema.optional(),
-      fullName: z.string().optional(),
-      email: z.string().optional(),
+      fullName: z
+        .string()
+        .optional()
+        .meta({ ui: { roles: ["label", "search"] } }),
+      email: lmsEmailSchema.meta({ ui: { role: "column" } }),
       status: reportStatusSchema.optional(),
       centre: z.array(centreOrIdSchema).optional(),
     })
@@ -85,8 +124,8 @@ const reportClassUsersAgentRowSchema = z.looseObject({
   completedByUser: z.looseObject({ _id: mongoIdSchema.optional() }).optional(),
 });
 
-/** LMS wire row. */
-const reportClassUsersWireRowSchema = z.looseObject({
+/** LMS wire row for POST /reports/courses/:id/users. */
+export const reportClassUsersWireRowSchema = z.looseObject({
   _id: mongoIdSchema.optional(),
   progress: z.number().min(0).max(100).optional(),
   status: classUserStatusSchema.optional(),
@@ -99,9 +138,7 @@ const reportClassUsersWireRowSchema = z.looseObject({
   intakeTotalHours: z.union([z.number(), z.string()]).optional(),
   isSuspension: z.boolean().optional(),
   totalCourseTime: z.union([z.number(), z.string()]).optional(),
-  userCourseCentres: z
-    .array(z.looseObject({ _id: mongoIdSchema.optional() }))
-    .optional(),
+  userCourseCentres: z.array(centreNameRefSchema).optional(),
   course: z
     .looseObject({
       _id: mongoIdSchema.optional(),
@@ -115,7 +152,7 @@ const reportClassUsersWireRowSchema = z.looseObject({
     .looseObject({
       _id: mongoIdSchema.optional(),
       fullName: z.string().optional(),
-      email: z.string().optional(),
+      email: lmsEmailSchema,
       status: reportStatusSchema.optional(),
       courseCentre: z.array(centreOrIdSchema).optional(),
     })
@@ -124,37 +161,16 @@ const reportClassUsersWireRowSchema = z.looseObject({
   completedByUser: z.looseObject({ _id: mongoIdSchema.optional() }).optional(),
 });
 
-/** On this endpoint `course` means Class. */
-const reportClassUsersFieldAliases: FieldAliases = {
-  class: "course",
-  "class.name": "course.name",
-  "class.code": "course.code",
-  "class._id": "course._id",
-  "class.status": "course.status",
-  "class.centre": "course.courseCentre",
-  userCentre: "userCourseCentres",
-  "userCentre.name": "userCourseCentres.name",
-  "userCentre._id": "userCourseCentres._id",
-  centre: "courseCentre",
-  "user.centre": "user.courseCentre",
-};
-
 const reportClassUsersQuerySchema = withAllowedSort(
   paginationQuerySchema.extend({
-    classId: mongoIdSchema.describe(
-      `${CLASS_ID_DESCRIBE} Required. Path id for POST /reports/courses/:id/users.`,
-    ),
+    classId: mongoIdSchema.describe(CLASS_ID_DESCRIBE),
     centreId: mongoIdSchema.describe(CENTRE_ID_DESCRIBE).optional(),
   }),
-  reportClassUsersAgentRowSchema,
+  reportClassUsersRowSchema,
 );
-
-export const reportClassUsersRowSchema = reportClassUsersAgentRowSchema;
 
 export const reportClassUsersSchema = {
   query: reportClassUsersQuerySchema,
-  body: lmsListBodySchema(reportClassUsersAgentRowSchema),
-  output: lmsPageSchema(reportClassUsersAgentRowSchema),
-  wireOutput: lmsPageSchema(reportClassUsersWireRowSchema),
-  fieldAliases: reportClassUsersFieldAliases,
+  body: lmsListBodySchema(reportClassUsersRowSchema),
+  output: lmsPageSchema(reportClassUsersRowSchema),
 };

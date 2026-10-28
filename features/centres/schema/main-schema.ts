@@ -40,13 +40,13 @@ const nonGradePointEntrySchema = z.looseObject({
 
 /** CourseCentre (centre) — `server/components/courseCentre/courseCentre.model.js` */
 export const centreSchema = z.looseObject({
-  _id: mongoIdSchema,
+  _id: mongoIdSchema.meta({ ui: { role: "value" } }),
   creator: populatedRefSchema,
-  name: z.string(),
+  name: z.string().meta({ ui: { roles: ["label", "search"] } }),
   organisation: populatedRefSchema,
   businessType: populatedRefSchema,
   centreType: populatedRefSchema,
-  code: z.string().optional(),
+  code: z.string().optional().meta({ ui: { role: "detail" } }),
   addressLine1: z.string(),
   addressLine2: z.string(),
   country: populatedRefSchema.optional(),

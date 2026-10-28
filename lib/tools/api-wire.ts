@@ -1,20 +1,22 @@
 /**
  * LMS wire boundary.
  *
- * Each list/report schema owns `fieldAliases` (agent path → LMS path).
- * Call `toWireRequest` once before lmsFetch; call `fromWireResponse` after.
+ * Each endpoint that renames fields owns one FieldAlias (agent path → LMS path).
+ * Call `toWireRequest` before lmsFetch. Validate with `outputSchema`, which
+ * renames LMS keys on the page after the wire row is checked.
  *
  * Agent sees: class, centre, class.name, centre.name, …
  * LMS sees:   course, courseCentre, course.name, courseCentre.name, …
  */
+import { z } from "zod";
 
-export const CENTRE_ID_DESCRIBE = "Centre id (branch/company)";
+import { lmsPageSchema } from "./api-response";
 
-export const CLASS_ID_DESCRIBE =
-  "Class id. Resolve via list-classes. Never put a Class id in centreId.";
+export const CENTRE_ID_DESCRIBE = "Centre id";
 
-export const PARENT_COURSE_ID_DESCRIBE =
-  "Parent Course id (course template), not a Class id and not a Centre id.";
+export const CLASS_ID_DESCRIBE = "Class id";
+
+export const PARENT_COURSE_ID_DESCRIBE = "Parent Course id";
 
 /** Agent filter/select/sort path → LMS path. */
 export type FieldAliases = Record<string, string>;
@@ -31,13 +33,23 @@ const DEFAULT_ID_MAP: Required<WireIdMap> = {
   parentCourseId: "parentCourse",
 };
 
+export type ToWireRequestInput = {
+  query?: Record<string, unknown>;
+  body?: Record<string, unknown>;
+  /** Override query id key mapping when needed (e.g. parentCourseId → course). */
+  idMap?: WireIdMap;
+};
+
 function segmentAliases(aliases: FieldAliases): Record<string, string> {
   return Object.fromEntries(
     Object.entries(aliases).filter(([key]) => !key.includes(".")),
   );
 }
 
-function renamePathSegments(path: string, map: Record<string, string>): string {
+function renamePathSegments(
+  path: string,
+  map: Record<string, string>,
+): string {
   return path
     .split(".")
     .map((segment) => map[segment] ?? segment)
@@ -60,21 +72,6 @@ function renameObjectKeys(
     );
   }
   return value;
-}
-
-/** Map one agent field path to an LMS path (exact alias, else segment rewrite). */
-export function toApiField(field: string, aliases: FieldAliases = {}): string {
-  if (aliases[field]) return aliases[field];
-  return renamePathSegments(field, segmentAliases(aliases));
-}
-
-function invertSegmentAliases(aliases: FieldAliases): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(segmentAliases(aliases)).map(([agent, wire]) => [
-      wire,
-      agent,
-    ]),
-  );
 }
 
 function mapQueryIds(
@@ -102,74 +99,101 @@ function mapQueryIds(
   return wire;
 }
 
-function mapFilterAndSelect(
-  body: Record<string, unknown>,
-  aliases: FieldAliases,
-): Record<string, unknown> {
-  if (Object.keys(aliases).length === 0) return body;
+/**
+ * One agent → LMS field map for a single endpoint.
+ * Reverse names are derived, so response rename cannot drift from the request map.
+ */
+export class FieldAlias {
+  private readonly aliases: FieldAliases;
+  private readonly segments: Record<string, string>;
+  private readonly reverseSegments: Record<string, string>;
 
-  const next: Record<string, unknown> = { ...body };
-
-  if (Array.isArray(next.advanceFilterSelect)) {
-    next.advanceFilterSelect = next.advanceFilterSelect.map((path) =>
-      typeof path === "string" ? toApiField(path, aliases) : path,
+  constructor(aliases: FieldAliases = {}) {
+    this.aliases = aliases;
+    this.segments = segmentAliases(aliases);
+    this.reverseSegments = Object.fromEntries(
+      Object.entries(this.segments).map(([agent, wire]) => [wire, agent]),
     );
   }
 
-  if (Array.isArray(next.advanceFilter)) {
-    next.advanceFilter = next.advanceFilter.map((item) => {
-      if (!item || typeof item !== "object" || Array.isArray(item)) return item;
-      const filter = { ...(item as Record<string, unknown>) };
-      if (typeof filter.field === "string") {
-        filter.field = toApiField(filter.field, aliases);
-      }
-      return filter;
-    });
+  /** Exact alias wins, otherwise each path segment is rewritten. */
+  toApiField(field: string): string {
+    if (this.aliases[field]) return this.aliases[field];
+    return renamePathSegments(field, this.segments);
   }
 
-  return next;
-}
+  /**
+   * Query ids, sort path, advanceFilter.field, and advanceFilterSelect.
+   * Filter operator and value are left unchanged.
+   */
+  toWireRequest(input: ToWireRequestInput = {}): {
+    query: Record<string, unknown>;
+    body: Record<string, unknown>;
+  } {
+    const query = mapQueryIds(
+      { ...(input.query ?? {}) },
+      input.idMap ?? {},
+    );
 
-export type ToWireRequestInput = {
-  query?: Record<string, unknown>;
-  body?: Record<string, unknown>;
-  /** From the feature schema — agent paths → LMS paths. */
-  fieldAliases?: FieldAliases;
-  /** Override query id key mapping when needed (e.g. parentCourseId → course). */
-  idMap?: WireIdMap;
-};
+    if (typeof query.order === "string" && Object.keys(this.aliases).length > 0) {
+      query.order = this.toApiField(query.order);
+    }
 
-/**
- * Single pre-request converter.
- * - query: classId / centreId / parentCourseId → LMS keys; order via fieldAliases
- * - body: advanceFilter.field + advanceFilterSelect via fieldAliases
- */
-export function toWireRequest(input: ToWireRequestInput): {
-  query: Record<string, unknown>;
-  body: Record<string, unknown>;
-} {
-  const aliases = input.fieldAliases ?? {};
-  const query = mapQueryIds({ ...(input.query ?? {}) }, input.idMap ?? {});
-
-  if (typeof query.order === "string" && Object.keys(aliases).length > 0) {
-    query.order = toApiField(query.order, aliases);
+    return {
+      query,
+      body: this.mapFilterAndSelect({ ...(input.body ?? {}) }),
+    };
   }
 
-  return {
-    query,
-    body: mapFilterAndSelect({ ...(input.body ?? {}) }, aliases),
-  };
-}
+  /**
+   * Validate the LMS page, then rename wire keys on each row.
+   * The returned schema uses `.transform()`, so it must not be an Eve `outputSchema`
+   * (JSON Schema cannot represent transforms). Use {@link readPage} in API code.
+   */
+  outputSchema<T extends z.ZodObject<z.ZodRawShape>>(rowSchema: T) {
+    return lmsPageSchema(rowSchema).transform((page) => this.fromWire(page));
+  }
 
-/**
- * Rename LMS response keys to agent names using reverse of fieldAliases
- * segment map (e.g. courseCentre → centre, course → class when aliased).
- */
-export function fromWireResponse<T = unknown>(
-  payload: unknown,
-  fieldAliases: FieldAliases = {},
-): T {
-  const reverse = invertSegmentAliases(fieldAliases);
-  if (Object.keys(reverse).length === 0) return payload as T;
-  return renameObjectKeys(payload, reverse) as T;
+  /** Parse an LMS page against the wire row, then rename keys to agent names. */
+  readPage<T extends z.ZodObject<z.ZodRawShape>>(
+    wireRow: T,
+    payload: unknown,
+  ) {
+    return this.fromWire(lmsPageSchema(wireRow).parse(payload));
+  }
+
+  /** Rename LMS keys to agent names. No-op when this map has no segment aliases. */
+  fromWire<T>(payload: T): T {
+    if (Object.keys(this.reverseSegments).length === 0) return payload;
+    return renameObjectKeys(payload, this.reverseSegments) as T;
+  }
+
+  private mapFilterAndSelect(
+    body: Record<string, unknown>,
+  ): Record<string, unknown> {
+    if (Object.keys(this.aliases).length === 0) return body;
+
+    const next: Record<string, unknown> = { ...body };
+
+    if (Array.isArray(next.advanceFilterSelect)) {
+      next.advanceFilterSelect = next.advanceFilterSelect.map((path) =>
+        typeof path === "string" ? this.toApiField(path) : path,
+      );
+    }
+
+    if (Array.isArray(next.advanceFilter)) {
+      next.advanceFilter = next.advanceFilter.map((item) => {
+        if (!item || typeof item !== "object" || Array.isArray(item)) {
+          return item;
+        }
+        const filter = { ...(item as Record<string, unknown>) };
+        if (typeof filter.field === "string") {
+          filter.field = this.toApiField(filter.field);
+        }
+        return filter;
+      });
+    }
+
+    return next;
+  }
 }

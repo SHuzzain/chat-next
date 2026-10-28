@@ -178,6 +178,27 @@ describe("paginated LMS contract", () => {
     assert.equal(page.data[0]?.email, undefined);
   });
 
+  it("keeps blank or malformed LMS emails without failing the page", async () => {
+    const { lmsEmailSchema } = await import("@/lib/zod/primitives");
+    const page = lmsPageSchema(
+      z.object({
+        _id: z.string(),
+        fullName: z.string().optional(),
+        email: lmsEmailSchema,
+      }),
+    ).parse({
+      data: [
+        { _id: "a", fullName: "Ajith One", email: "ajith@example.com" },
+        { _id: "b", fullName: "Ajith Two", email: "" },
+        { _id: "c", fullName: "Ajith Three", email: "not-an-email" },
+      ],
+      totalItems: 3,
+    });
+    assert.equal(page.data[0]?.email, "ajith@example.com");
+    assert.equal(page.data[1]?.email, undefined);
+    assert.equal(page.data[2]?.email, "not-an-email");
+  });
+
   it("allows selecting parent object paths for projection", () => {
     const parsed = listInput.parse({
       advanceFilterSelect: ["centre", "centre.name", "fullName"],

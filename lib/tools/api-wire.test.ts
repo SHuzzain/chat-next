@@ -1,29 +1,69 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { z } from "zod";
 
-import { fromWireResponse, toApiField, toWireRequest } from "./api-wire";
+import { FieldAlias } from "./api-wire";
 
-/** Mirrors reportUserEnrollSchema.fieldAliases */
-const enrollAliases = {
+/** Mirrors enrollFields — keep in sync with user-schema.ts */
+const enrollFields = new FieldAlias({
   centre: "courseCentre",
   "centre.name": "courseCentre.name",
   "centre._id": "courseCentre._id",
   "centre.code": "courseCentre.code",
-} as const;
+  enrolledClassesCount: "assignedCourses",
+  completedClassesCount: "completedCourses",
+  userRoleTypes: "type",
+  userStatus: "status",
+});
 
-/** Mirrors reportUserClassScoreSchema.fieldAliases (course = Class here) */
-const classScoreAliases = {
+/** Mirrors classScoreFields — keep in sync with user-schema.ts */
+const classScoreFields = new FieldAlias({
   class: "course",
   "class.name": "course.name",
+  "class.code": "course.code",
+  "class._id": "course._id",
   centre: "courseCentre",
   "centre.name": "courseCentre.name",
+  "centre._id": "courseCentre._id",
+  "centre.code": "courseCentre.code",
   "user.centre": "user.courseCentre",
-} as const;
+});
 
-describe("toWireRequest", () => {
+/** Mirrors classUsersFields — keep in sync with class-users.schema.ts */
+const classUsersFields = new FieldAlias({
+  class: "course",
+  "class.name": "course.name",
+  "class.code": "course.code",
+  "class._id": "course._id",
+  "class.status": "course.status",
+  "class.centre": "course.courseCentre",
+  userCentre: "userCourseCentres",
+  "userCentre.name": "userCourseCentres.name",
+  "userCentre._id": "userCourseCentres._id",
+  "userCentre.code": "userCourseCentres.code",
+  centre: "courseCentre",
+  "centre.name": "courseCentre.name",
+  "centre._id": "courseCentre._id",
+  "centre.code": "courseCentre.code",
+  "user.centre": "user.courseCentre",
+});
+
+const enrollRowSchema = z.object({
+  fullName: z.string().optional(),
+  courseCentre: z
+    .array(z.object({ _id: z.string().optional(), name: z.string().optional() }))
+    .optional(),
+  assignedCourses: z.number().optional(),
+  completedCourses: z.number().optional(),
+  type: z.array(z.object({ name: z.string().optional() })).optional(),
+  status: z.string().optional(),
+  course: z.object({ name: z.string().optional() }).optional(),
+});
+
+describe("FieldAlias.toWireRequest", () => {
   it("maps query ids and filter/select paths in one call", () => {
     assert.deepEqual(
-      toWireRequest({
+      enrollFields.toWireRequest({
         query: {
           page: 1,
           classId: "class-1",
@@ -41,7 +81,6 @@ describe("toWireRequest", () => {
             },
           ],
         },
-        fieldAliases: enrollAliases,
       }),
       {
         query: {
@@ -69,14 +108,34 @@ describe("toWireRequest", () => {
     );
   });
 
+  it("maps enroll counts to LMS assignedCourses and completedCourses", () => {
+    const { query, body } = enrollFields.toWireRequest({
+      query: { page: 1, order: "enrolledClassesCount", orderBy: "desc" },
+      body: {
+        advanceFilterSelect: ["fullName", "enrolledClassesCount", "completedClassesCount"],
+        advanceFilter: [
+          { field: "enrolledClassesCount", type: "Range", value: [2, 999999] },
+        ],
+      },
+    });
+    assert.equal(query.order, "assignedCourses");
+    assert.deepEqual(body.advanceFilterSelect, [
+      "fullName",
+      "assignedCourses",
+      "completedCourses",
+    ]);
+    assert.deepEqual(body.advanceFilter, [
+      { field: "assignedCourses", type: "Range", value: [2, 999999] },
+    ]);
+  });
+
   it("preserves filter type and value", () => {
-    const { body } = toWireRequest({
+    const { body } = enrollFields.toWireRequest({
       body: {
         advanceFilter: [
           { field: "fullName", type: "Contains", value: ["Ada"] },
         ],
       },
-      fieldAliases: enrollAliases,
     });
     assert.deepEqual(body.advanceFilter, [
       { field: "fullName", type: "Contains", value: ["Ada"] },
@@ -84,12 +143,11 @@ describe("toWireRequest", () => {
   });
 
   it("maps class paths when endpoint treats course as Class", () => {
-    assert.equal(toApiField("class.name", classScoreAliases), "course.name");
-    const { body } = toWireRequest({
+    assert.equal(classScoreFields.toApiField("class.name"), "course.name");
+    const { body } = classScoreFields.toWireRequest({
       body: {
         advanceFilterSelect: ["class", "centre.name", "user.centre"],
       },
-      fieldAliases: classScoreAliases,
     });
     assert.deepEqual(body.advanceFilterSelect, [
       "course",
@@ -100,7 +158,7 @@ describe("toWireRequest", () => {
 
   it("omits empty id values and supports idMap override", () => {
     assert.deepEqual(
-      toWireRequest({
+      new FieldAlias().toWireRequest({
         query: {
           page: 1,
           classId: "",
@@ -117,66 +175,96 @@ describe("toWireRequest", () => {
   });
 });
 
-describe("fromWireResponse", () => {
-  it("renames LMS keys to agent names", () => {
-    assert.deepEqual(
-      fromWireResponse(
+describe("FieldAlias.outputSchema", () => {
+  it("renames LMS keys inside page data", () => {
+    const page = enrollFields.outputSchema(enrollRowSchema).parse({
+      data: [
         {
-          data: [
-            {
-              _id: "aaaaaaaaaaaaaaaaaaaaaaaa",
-              fullName: "Ada",
-              courseCentre: [{ _id: "bbbbbbbbbbbbbbbbbbbbbbbb", name: "East" }],
-            },
-          ],
-          totalItems: 1,
+          fullName: "Ada",
+          courseCentre: [{ _id: "bbbbbbbbbbbbbbbbbbbbbbbb", name: "East" }],
+          assignedCourses: 3,
+          completedCourses: 1,
+          type: [{ name: "Learner" }],
+          status: "ACTIVE",
+          course: { name: "Parent Course Template" },
         },
-        enrollAliases,
-      ),
-      {
-        data: [
-          {
-            _id: "aaaaaaaaaaaaaaaaaaaaaaaa",
-            fullName: "Ada",
-            centre: [{ _id: "bbbbbbbbbbbbbbbbbbbbbbbb", name: "East" }],
-          },
-        ],
-        totalItems: 1,
-      },
-    );
+      ],
+      totalItems: 1,
+    });
+
+    assert.deepEqual(page, {
+      data: [
+        {
+          fullName: "Ada",
+          centre: [{ _id: "bbbbbbbbbbbbbbbbbbbbbbbb", name: "East" }],
+          enrolledClassesCount: 3,
+          completedClassesCount: 1,
+          userRoleTypes: [{ name: "Learner" }],
+          userStatus: "ACTIVE",
+          course: { name: "Parent Course Template" },
+        },
+      ],
+      totalItems: 1,
+    });
   });
 
-  it("does not rename course→class when aliases omit that mapping", () => {
-    assert.deepEqual(
-      fromWireResponse(
-        { data: [{ course: { name: "Parent Course Template" } }] },
-        enrollAliases,
-      ),
-      { data: [{ course: { name: "Parent Course Template" } }] },
-    );
+  it("renames course to class only when that alias exists", () => {
+    const row = z.object({
+      course: z.object({ name: z.string().optional() }).optional(),
+      courseCentre: z.array(z.object({ name: z.string() })).optional(),
+    });
+    const page = classScoreFields.outputSchema(row).parse({
+      data: [
+        {
+          course: { name: "Math 101" },
+          courseCentre: [{ name: "East" }],
+        },
+      ],
+    });
+
+    assert.deepEqual(page.data, [
+      {
+        class: { name: "Math 101" },
+        centre: [{ name: "East" }],
+      },
+    ]);
   });
 
-  it("renames course→class when endpoint aliases include it", () => {
-    assert.deepEqual(
-      fromWireResponse(
+  it("renames class roster wire keys for agent output", () => {
+    const row = z.object({
+      course: z.object({ name: z.string().optional() }).optional(),
+      userCourseCentres: z
+        .array(z.object({ name: z.string().optional() }))
+        .optional(),
+      user: z
+        .object({
+          fullName: z.string().optional(),
+          courseCentre: z.array(z.object({ name: z.string() })).optional(),
+        })
+        .optional(),
+    });
+    const page = classUsersFields.outputSchema(row).parse({
+      data: [
         {
-          data: [
-            {
-              course: { name: "Math 101" },
-              courseCentre: [{ name: "East" }],
-            },
-          ],
-        },
-        classScoreAliases,
-      ),
-      {
-        data: [
-          {
-            class: { name: "Math 101" },
-            centre: [{ name: "East" }],
+          course: { name: "vulnerability check" },
+          userCourseCentres: [{ name: "NIshant Test Centre" }],
+          user: {
+            fullName: "Ajith123 Naruto",
+            courseCentre: [{ name: "East" }],
           },
-        ],
+        },
+      ],
+    });
+
+    assert.deepEqual(page.data, [
+      {
+        class: { name: "vulnerability check" },
+        userCentre: [{ name: "NIshant Test Centre" }],
+        user: {
+          fullName: "Ajith123 Naruto",
+          centre: [{ name: "East" }],
+        },
       },
-    );
+    ]);
   });
 });

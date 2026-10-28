@@ -9,6 +9,8 @@
  */
 import { z } from "zod";
 
+import { fieldWithRole, tableColumns } from "@/lib/widgets/roles";
+
 import { fieldEnumFromRow } from "./api-field-paths";
 import { paginationQuerySchema, withAllowedSort } from "./api-pagination";
 
@@ -119,7 +121,7 @@ export function advanceFilterItemSchema(
       type: z
         .literal("Range")
         .describe(
-          "Filter by a numeric range. Provide exactly two numbers [min, max], where min is less than or equal to max.",
+          "Filter by a numeric range. Provide exactly two numbers [min, max] max value (100), where min is less than or equal to max.",
         ),
       value: numberRangeValueSchema,
     }),
@@ -139,24 +141,46 @@ export function advanceFilterSchema(
         "Select an available field, choose a supported operator, and provide the matching value.",
         "Combine multiple filters to narrow results.",
         "Do not invent field names or operators.",
-        "Centre (branch/company) id filters belong on query.centreId, not in advanceFilter.",
-        "Class id filters belong on query.classId when that param exists.",
-        "Never put a Class id in any Centre-related filter.",
       ].join(" "),
     );
 }
 
+/** Id + table/choice display paths derived from row schema UI roles. */
+export function defaultSelectPaths(rowSchema: z.ZodType): string[] {
+  const value = fieldWithRole(rowSchema, "value");
+  const columns = tableColumns(rowSchema).map((column) => column.key);
+  return [
+    ...new Set(
+      [value, ...columns].filter((path): path is string => Boolean(path)),
+    ),
+  ];
+}
+
+/**
+ * Keep widget columns/labels available: always request role-based display
+ * paths, then any extra fields the question needs.
+ */
+export function mergeDisplaySelect(
+  select: string[] | undefined,
+  rowSchema: z.ZodType,
+): string[] {
+  return [...new Set([...defaultSelectPaths(rowSchema), ...(select ?? [])])];
+}
+
 export function advanceFilterSelectSchema(rowSchema: z.ZodType) {
+  const defaults = defaultSelectPaths(rowSchema);
   return z
     .array(fieldEnumFromRow(rowSchema))
     .describe(
       [
         "Field projection for LMS list APIs (body.advanceFilterSelect).",
         "Send a string array of field paths only — never a Mongo $project object.",
-        "Backend converts it with convertToMongoQueryWithSelect(select, 'project').",
-        "Use available field paths from this tool's body schema (may be agent names like class / userCentre when fieldAliases are configured).",
-        "Example: ['user.fullName', 'user.email', 'class.name', 'userCentre.name'].",
-        "Only select fields relevant to the user's request. Do not invent field names.",
+        "Display fields for the list widget are always requested by the runtime;",
+        defaults.length > 0
+          ? `those are: ${defaults.join(", ")}.`
+          : "id and display fields.",
+        "Add centres, counts, dates, mobile, parent, creator, or nested paths only when the user asked about them.",
+        "Do not invent field names.",
       ].join(" "),
     );
 }

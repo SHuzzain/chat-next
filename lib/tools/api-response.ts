@@ -34,6 +34,10 @@ export const lmsPageSchema = <T extends z.ZodObject<z.ZodRawShape>>(
     userGridColumn: z.record(z.string(), z.unknown()).nullable().optional(),
   });
 
+export type LMSPage<T extends z.ZodObject<z.ZodRawShape>> = z.infer<
+  ReturnType<typeof lmsPageSchema<T>>
+>;
+
 /** Alias of {@link lmsPageSchema} for LMS paginated list payloads. */
 export const paginationResponseSchema = lmsPageSchema;
 

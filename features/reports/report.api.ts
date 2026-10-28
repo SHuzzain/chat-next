@@ -1,18 +1,25 @@
 import type { LmsAuth } from "@/lib/auth";
-import { paramSchema } from "@/lib/common-zod";
 import { canViewUserReport } from "@/lib/permissions";
 import { lmsFetch } from "@/lib/tools/api-client";
 
 import type {
   ClassEnrollmentAndProgress,
+  ReportClassUsers,
   ReportLessonOverall,
   ReportUserClassScore,
   ReportUserEnroll,
 } from "./report.types";
 import {
+  classScoreFields,
+  classUsersFields,
+  enrollFields,
+  reportClassUsersSchema,
+  reportClassUsersWireRowSchema,
   reportLessonOverallSchema,
   reportUserClassScoreSchema,
+  reportUserClassScoreWireRowSchema,
   reportUserEnrollSchema,
+  reportUserEnrollWireRowSchema,
 } from "./schema";
 import { classEnrollmentAndProgressSchema } from "./schema/class-enrollment-and-progress";
 
@@ -24,39 +31,28 @@ function warnRole(auth: LmsAuth) {
   }
 }
 
-export function toApiField(
-  field: string,
-  fieldAliases: Record<string, string>,
-): string {
-  return fieldAliases[field] ?? field;
-}
-
 export async function listUserEnrollReports(
   query: ReportUserEnroll["query"],
   auth: LmsAuth,
   body: ReportUserEnroll["body"],
 ): Promise<ReportUserEnroll["output"]> {
-  const parseQuery = reportUserEnrollSchema.query.parse(query);
+  const parsedQuery = reportUserEnrollSchema.query.parse(query);
   const parsedBody = reportUserEnrollSchema.body.parse(body ?? {});
-  const apiRequest = {
-    ...parsedBody,
-    advanceFilter: parsedBody.advanceFilter?.map((filter) => ({
-      ...filter,
-      field: toApiField(filter.field, reportUserEnrollSchema.fieldAliases),
-    })),
-    advanceFilterSelect: parsedBody.advanceFilterSelect?.map((select) =>
-      toApiField(select, reportUserEnrollSchema.fieldAliases),
-    ),
-  };
+  const wire = enrollFields.toWireRequest({
+    query: parsedQuery as Record<string, unknown>,
+    body: parsedBody as Record<string, unknown>,
+  });
 
   warnRole(auth);
   const payload = await lmsFetch("reports/users", {
     method: "POST",
-    query: parseQuery,
-    body: apiRequest,
+    query: wire.query,
+    body: wire.body,
     auth,
   });
-  return reportUserEnrollSchema.output.parse(payload);
+  return reportUserEnrollSchema.output.parse(
+    enrollFields.readPage(reportUserEnrollWireRowSchema, payload),
+  );
 }
 
 export async function listUserClassScoreReports(
@@ -64,18 +60,22 @@ export async function listUserClassScoreReports(
   auth: LmsAuth,
   body: ReportUserClassScore["body"],
 ): Promise<ReportUserClassScore["output"]> {
-  const parseQuery = reportUserClassScoreSchema.query.parse(query);
-  const { id } = paramSchema.parse({ id: parseQuery.userId });
-  delete parseQuery.userId;
+  const { userId, ...rest } = reportUserClassScoreSchema.query.parse(query);
   const parsedBody = reportUserClassScoreSchema.body.parse(body ?? {});
+  const wire = classScoreFields.toWireRequest({
+    query: rest as Record<string, unknown>,
+    body: parsedBody as Record<string, unknown>,
+  });
   warnRole(auth);
-  const payload = await lmsFetch(`reports/users/${id}/courses`, {
+  const payload = await lmsFetch(`reports/users/${userId}/courses`, {
     method: "POST",
-    query: parseQuery,
-    body: parsedBody,
+    query: wire.query,
+    body: wire.body,
     auth,
   });
-  return reportUserClassScoreSchema.output.parse(payload);
+  return reportUserClassScoreSchema.output.parse(
+    classScoreFields.readPage(reportUserClassScoreWireRowSchema, payload),
+  );
 }
 
 export async function listLessonOverallReports(
@@ -111,4 +111,27 @@ export async function listClassEnrollmentAndProgressReports(
     auth,
   });
   return classEnrollmentAndProgressSchema.output.parse(payload);
+}
+
+export async function listClassUsersReports(
+  query: ReportClassUsers["query"],
+  auth: LmsAuth,
+  body: ReportClassUsers["body"],
+): Promise<ReportClassUsers["output"]> {
+  const { classId, ...rest } = reportClassUsersSchema.query.parse(query);
+  const parsedBody = reportClassUsersSchema.body.parse(body ?? {});
+  const wire = classUsersFields.toWireRequest({
+    query: rest as Record<string, unknown>,
+    body: parsedBody as Record<string, unknown>,
+  });
+  warnRole(auth);
+  const payload = await lmsFetch(`reports/courses/${classId}/users`, {
+    method: "POST",
+    query: wire.query,
+    body: wire.body,
+    auth,
+  });
+  return reportClassUsersSchema.output.parse(
+    classUsersFields.readPage(reportClassUsersWireRowSchema, payload),
+  );
 }

@@ -20,9 +20,7 @@ export { withAllowedSort } from "./tools/api-pagination";
 export { fieldPaths, fieldEnumFromRow } from "./tools/api-field-paths";
 
 export {
-  toWireRequest,
-  fromWireResponse,
-  toApiField,
+  FieldAlias,
   CENTRE_ID_DESCRIBE,
   CLASS_ID_DESCRIBE,
   PARENT_COURSE_ID_DESCRIBE,

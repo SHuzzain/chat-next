@@ -59,7 +59,15 @@ export function fieldWithRole(rowSchema: z.ZodType, role: WidgetRole): string | 
   if (!object) return undefined;
 
   for (const [key, field] of Object.entries(object.shape)) {
-    if (collectRoles(field as z.ZodType).includes(role)) return key;
+    const child = field as z.ZodType;
+    if (collectRoles(child).includes(role)) return key;
+    const nested = objectSchema(child);
+    if (!nested) continue;
+    for (const [nestedKey, nestedField] of Object.entries(nested.shape)) {
+      if (collectRoles(nestedField as z.ZodType).includes(role)) {
+        return `${key}.${nestedKey}`;
+      }
+    }
   }
   return undefined;
 }
@@ -68,7 +76,65 @@ export function fieldsWithRole(rowSchema: z.ZodType, role: WidgetRole): string[]
   const object = objectSchema(rowSchema);
   if (!object) return [];
 
-  return Object.entries(object.shape)
-    .filter(([, field]) => collectRoles(field as z.ZodType).includes(role))
-    .map(([key]) => key);
+  const paths: string[] = [];
+  for (const [key, field] of Object.entries(object.shape)) {
+    const child = field as z.ZodType;
+    if (collectRoles(child).includes(role)) paths.push(key);
+    const nested = objectSchema(child);
+    if (!nested) continue;
+    for (const [nestedKey, nestedField] of Object.entries(nested.shape)) {
+      if (collectRoles(nestedField as z.ZodType).includes(role)) {
+        paths.push(`${key}.${nestedKey}`);
+      }
+    }
+  }
+  return paths;
+}
+
+/** Human header for a field path, preferring the Zod field description when set. */
+export function fieldLabel(rowSchema: z.ZodType, path: string): string {
+  const object = objectSchema(rowSchema);
+  if (object) {
+    const [head, ...rest] = path.split(".");
+    const field = object.shape[head] as z.ZodType | undefined;
+    if (field) {
+      if (rest.length === 0) {
+        const described = field.description?.trim();
+        if (described) return described;
+      } else {
+        const nested = objectSchema(field);
+        const leaf = nested?.shape[rest[0]!] as z.ZodType | undefined;
+        const described = leaf?.description?.trim();
+        if (described) return described;
+      }
+    }
+  }
+  const leaf = path.includes(".") ? path.slice(path.lastIndexOf(".") + 1) : path;
+  if (leaf === "_id") return "Id";
+  const spaced = leaf.replace(/[_]+/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/**
+ * Columns for widget_data_table.
+ * Always lead with label (+ detail), then any fields marked `column`.
+ */
+export function tableColumns(
+  rowSchema: z.ZodType,
+): Array<{ key: string; label: string; priority?: "primary" | "secondary" }> {
+  const labelKey = fieldWithRole(rowSchema, "label");
+  const detailKey = fieldWithRole(rowSchema, "detail");
+  const keys = [
+    ...new Set(
+      [labelKey, detailKey, ...fieldsWithRole(rowSchema, "column")].filter(
+        (key): key is string => Boolean(key),
+      ),
+    ),
+  ];
+
+  return keys.map((key) => ({
+    key,
+    label: fieldLabel(rowSchema, key),
+    ...(key === labelKey ? { priority: "primary" as const } : { priority: "secondary" as const }),
+  }));
 }

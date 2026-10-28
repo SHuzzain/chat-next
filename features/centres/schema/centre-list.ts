@@ -49,9 +49,7 @@ export const courseCentreRowSchema = centreSchema
     createdAt: ISODateSchema.optional(),
     updatedAt: ISODateSchema.optional(),
   })
-  .describe(
-    "Centre (branch/company) from LMS course-centres collection. Despite the API name courseCentre / CourseCentre, this is never a Class.",
-  );
+  .describe("Centre");
 
 /** Minimal centre ref for reports and user payloads. */
 export const courseCentreRefSchema = courseCentreRowSchema.pick({

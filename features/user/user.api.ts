@@ -1,7 +1,7 @@
 import type { LmsAuth } from "@/lib/auth";
 import { canViewUsers } from "@/lib/permissions";
 import { lmsFetch } from "@/lib/tools/api-client";
-import { toWireRequest } from "@/lib/tools/api-wire";
+import { FieldAlias } from "@/lib/tools/api-wire";
 
 import { userInfoListSchema } from "./schema";
 import type { UserInfoList } from "./user.type";
@@ -20,7 +20,7 @@ export async function listUsers(
   body: UserInfoList["body"],
 ): Promise<UserInfoList["output"]> {
   warnRole(auth);
-  const { query: wireQuery, body: wireBody } = toWireRequest({
+  const { query: wireQuery, body: wireBody } = new FieldAlias().toWireRequest({
     query: userInfoListSchema.query.parse(query) as Record<string, unknown>,
     body: userInfoListSchema.body.parse(body ?? {}) as Record<string, unknown>,
   });

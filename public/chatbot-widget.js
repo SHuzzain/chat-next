@@ -47,6 +47,7 @@
   function postSession() {
     var next = liveConfig();
     var token = String(next.token || "").trim();
+    if (!token) return;
     postToFrame({
       type: "lms-init",
       token: token,

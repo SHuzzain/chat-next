@@ -19,8 +19,11 @@ const centreRefSchema = courseCentreRefSchema;
 
 const classStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
 
-const ClassEnrollmentAndProgressRowSchema = z.object({
-  _id: mongoIdSchema.optional().describe("Internal ID of the Class"),
+export const classEnrollmentAndProgressRowSchema = z.object({
+  _id: mongoIdSchema
+    .optional()
+    .describe("Internal ID of the Class")
+    .meta({ ui: { role: "value" } }),
 
   creator: mongoIdSchema
     .optional()
@@ -30,7 +33,11 @@ const ClassEnrollmentAndProgressRowSchema = z.object({
 
   status: classStatusSchema.optional().describe("Current status of the Class"),
 
-  class: z.string().optional().describe("Class name displayed in the LMS"),
+  class: z
+    .string()
+    .optional()
+    .describe("Class name displayed in the LMS")
+    .meta({ ui: { roles: ["label", "search"] } }),
 
   assignedLearners: z
     .number()
@@ -52,9 +59,7 @@ const ClassEnrollmentAndProgressRowSchema = z.object({
   courseCentre: z
     .array(centreRefSchema.optional())
     .optional()
-    .describe(
-      "Centres (branch/company) associated with the Class. LMS field courseCentre means Centre, never Class. Prefer query.centreId to filter.",
-    ),
+    .describe("Centres associated with the Class"),
 
   activeLearners: z
     .number()
@@ -119,15 +124,15 @@ const ClassEnrollmentAndProgressQuerySchema = withAllowedSort(
       .describe(PARENT_COURSE_ID_DESCRIBE)
       .optional(),
   }),
-  ClassEnrollmentAndProgressRowSchema,
+  classEnrollmentAndProgressRowSchema,
 );
 
 const ClassEnrollmentAndProgressBodySchema = lmsListBodySchema(
-  ClassEnrollmentAndProgressRowSchema,
+  classEnrollmentAndProgressRowSchema,
 );
 
 export const classEnrollmentAndProgressSchema = {
-  output: lmsPageSchema(ClassEnrollmentAndProgressRowSchema),
+  output: lmsPageSchema(classEnrollmentAndProgressRowSchema),
   query: ClassEnrollmentAndProgressQuerySchema,
   body: ClassEnrollmentAndProgressBodySchema,
 };

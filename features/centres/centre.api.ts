@@ -1,7 +1,7 @@
 import type { LmsAuth } from "@/lib/auth";
 import { canViewCourseCentres } from "@/lib/permissions";
 import { lmsFetch } from "@/lib/tools/api-client";
-import { toWireRequest } from "@/lib/tools/api-wire";
+import { FieldAlias } from "@/lib/tools/api-wire";
 
 import { courseCentreListSchema } from "./schema";
 import type { CourseCentreList } from "./centre.types";
@@ -20,7 +20,7 @@ export async function listCourseCentresByAdvanceFilter(
   body: CourseCentreList["body"],
 ): Promise<CourseCentreList["output"]> {
   warnRole(auth);
-  const { query: wireQuery, body: wireBody } = toWireRequest({
+  const { query: wireQuery, body: wireBody } = new FieldAlias().toWireRequest({
     query: courseCentreListSchema.query.parse(query) as Record<
       string,
       unknown

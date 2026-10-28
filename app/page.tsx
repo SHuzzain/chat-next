@@ -7,7 +7,10 @@ import { AssistantChat } from "@/components/assistant-chat";
  * Pass a bearer via NEXT_PUBLIC_DEV_LMS_TOKEN for local smoke.
  */
 export default function Home() {
-  const token = process.env.NEXT_PUBLIC_DEV_LMS_TOKEN?.trim();
+  const token = process.env.NEXT_PUBLIC_DEV_LMS_TOKEN?.trim().replace(
+    /^["']|["']$/g,
+    "",
+  );
 
   if (!token) {
     return (

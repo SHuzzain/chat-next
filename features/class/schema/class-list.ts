@@ -22,10 +22,6 @@ const namedRefSchema = z.looseObject({
   name: z.string().optional(),
 });
 
-const classCentreRefSchema = courseCentreRefSchema.extend({
-  points: z.number().optional(),
-});
-
 const dateRangeSchema = z.looseObject({
   begin: ISODateSchema.optional(),
   end: ISODateSchema.optional(),
@@ -48,12 +44,6 @@ export const classRowSchema = classSchema
   })
   .extend({
     time: dateRangeSchema.nullish().describe("Class start and end dates"),
-    courseCentre: z
-      .array(classCentreRefSchema)
-      .nullish()
-      .describe(
-        "Centres (branch/company) assigned to the Class. LMS field courseCentre means Centre, never Class. Prefer query.centreId to filter.",
-      ),
     category: namedRefSchema.nullish().describe("Class category"),
     teachingLanguage: z
       .looseObject({
@@ -89,7 +79,7 @@ export const classRowSchema = classSchema
       .meta({ ui: { role: "detail" } }),
     _id: mongoIdSchema.meta({ ui: { role: "value" } }),
   })
-  .describe("Class from LMS courses collection where parent is set");
+  .describe("Class");
 
 /** Minimal Class ref for other features. */
 export const classRefSchema = classRowSchema.pick({

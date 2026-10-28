@@ -1,20 +1,57 @@
-import { defineTool, type ToolModelOutput } from "eve/tools";
+import { defineTool } from "eve/tools";
 import { z } from "zod";
 
 import type { LmsAuth } from "@/lib/auth";
+import { listModelValueSchema } from "@/lib/widgets/schema/model-output";
 import {
   listPurposes,
   listSelections,
-  presentList,
-  toWidgetModelOutput,
-  widgetUiSchema,
-  widgetWaitsForUser,
+  toWidgetAdvanceFilterOutput,
   type ListPurpose,
   type ListSelection,
-  type WidgetUi,
+  type WidgetPage,
 } from "@/lib/widgets/present";
 
+import { mergeDisplaySelect } from "./api-request";
 import { lmsAuthFromContext } from "./api-tool-context";
+
+function asWidgetPage(value: unknown): WidgetPage {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const record = value as Record<string, unknown>;
+  return {
+    data: Array.isArray(record.data) ? record.data : [],
+    totalItems:
+      typeof record.totalItems === "number" ? record.totalItems : undefined,
+    currentPage:
+      typeof record.currentPage === "number" || record.currentPage === null
+        ? record.currentPage
+        : undefined,
+    totalPage:
+      typeof record.totalPage === "number" ? record.totalPage : undefined,
+  };
+}
+
+function widgetView(
+  data: unknown,
+  config: {
+    entry: string;
+    source: string;
+    rowSchema: z.ZodType;
+  },
+  purpose: ListPurpose,
+  selection: ListSelection,
+) {
+  return toWidgetAdvanceFilterOutput({
+    schema: asWidgetPage(data),
+    config: {
+      source: config.source,
+      entity: config.entry,
+      purpose,
+      selection,
+      rowSchema: config.rowSchema,
+    },
+  }).value;
+}
 
 export function createPaginatedTool<
   TQuery extends z.ZodType,
@@ -25,17 +62,15 @@ export function createPaginatedTool<
   querySchema: TQuery;
   bodySchema: TBody;
   outputSchema: TOutput;
+  widget: {
+    entry: string;
+    source: string;
+    rowSchema: z.ZodType;
+  };
   execute: (
     input: { query: z.infer<TQuery>; body: z.infer<TBody> },
     auth: LmsAuth,
   ) => Promise<z.infer<TOutput>>;
-  transformOutput?: (output: z.infer<TOutput>) => ToolModelOutput;
-  present?: {
-    source: string;
-    entity: string;
-    plural: string;
-    rowSchema: z.ZodType;
-  };
 }) {
   type ToolInput = {
     query: z.infer<TQuery>;
@@ -44,29 +79,6 @@ export function createPaginatedTool<
     selection?: ListSelection;
   };
 
-  if (!config.present) {
-    return defineTool({
-      description: config.description,
-      inputSchema: z.object({
-        query: config.querySchema,
-        body: config.bodySchema,
-      }),
-      outputSchema: config.outputSchema,
-      execute: async (input, ctx) => {
-        const parsed = input as ToolInput;
-        const output = await config.execute(
-          { query: parsed.query, body: parsed.body },
-          lmsAuthFromContext(ctx),
-        );
-        return config.outputSchema.parse(output);
-      },
-      ...(config.transformOutput
-        ? { toModelOutput: config.transformOutput }
-        : {}),
-    });
-  }
-
-  const present = config.present;
   return defineTool({
     description: config.description,
     inputSchema: z.object({
@@ -76,7 +88,7 @@ export function createPaginatedTool<
         .enum(listPurposes)
         .optional()
         .describe(
-          "Use resolve when a later step needs the selected record id. Use show when the list itself is the answer.",
+          "Use resolve when a later step needs the selected record id. Use show when the list itself is the answer. Extra advanceFilterSelect fields should match the question; display fields are merged automatically.",
         ),
       selection: z
         .enum(listSelections)
@@ -86,31 +98,56 @@ export function createPaginatedTool<
         ),
     }),
     outputSchema: z.object({
-      ui: widgetUiSchema,
+      data: config.outputSchema,
+      purpose: z.enum(listPurposes),
+      selection: z.enum(listSelections),
+      view: listModelValueSchema,
     }),
     execute: async (input, ctx) => {
       const parsed = input as ToolInput;
-      const output = await config.execute(
-        { query: parsed.query, body: parsed.body },
-        lmsAuthFromContext(ctx),
+      const body = {
+        ...parsed.body,
+        advanceFilterSelect: mergeDisplaySelect(
+          (
+            parsed.body as { advanceFilterSelect?: string[] } | undefined
+          )?.advanceFilterSelect,
+          config.widget.rowSchema,
+        ),
+      } as z.infer<TBody>;
+      const data = config.outputSchema.parse(
+        await config.execute(
+          { query: parsed.query, body },
+          lmsAuthFromContext(ctx),
+        ),
       );
-      const page = config.outputSchema.parse(output);
-      const ui = widgetUiSchema.parse(
-        presentList({
-          page,
-          query: parsed.query,
-          body: parsed.body,
-          rowSchema: present.rowSchema,
-          source: present.source,
-          entity: present.entity,
-          plural: present.plural,
-          purpose: parsed.purpose ?? "resolve",
-          selection: parsed.selection ?? "single",
-        }),
-      );
-      return { ...page, ui };
+      const purpose = parsed.purpose ?? "show";
+      const selection = parsed.selection ?? "single";
+
+      return {
+        data,
+        purpose,
+        selection,
+        view: widgetView(data, config.widget, purpose, selection),
+      };
     },
-    endsTurn: (output) => widgetWaitsForUser((output.ui as WidgetUi).widget),
-    toModelOutput: (output) => toWidgetModelOutput(output),
+    toModelOutput: (output) => {
+      const parsed = output as {
+        data: unknown;
+        view?: Record<string, unknown>;
+        purpose?: ListPurpose;
+        selection?: ListSelection;
+      };
+      if (parsed.view) return { type: "json" as const, value: parsed.view };
+      return toWidgetAdvanceFilterOutput({
+        schema: asWidgetPage(parsed.data),
+        config: {
+          source: config.widget.source,
+          entity: config.widget.entry,
+          purpose: parsed.purpose ?? "show",
+          selection: parsed.selection ?? "single",
+          rowSchema: config.widget.rowSchema,
+        },
+      });
+    },
   });
 }

@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 import { courseCentreRefSchema } from "@/features/centres/schema/centre-list";
-import { ISODateSchema, mongoIdSchema } from "@/lib/zod/primitives";
+import {
+  ISODateSchema,
+  lmsEmailSchema,
+  mongoIdSchema,
+} from "@/lib/zod/primitives";
 import { lmsListBodySchema } from "@/lib/tools/api-request";
 import { paginatedQuerySchema } from "@/lib/tools/api-pagination";
 import { lmsPageSchema } from "@/lib/tools/api-response";
@@ -24,34 +28,35 @@ export const userInfoRowSchema = userSchema
     type: true,
     registrationBy: true,
     demeritPoints: true,
+    mobile: true,
   })
   .extend({
     courseCentre: z
-      .array(courseCentreRefSchema)
+      .array(courseCentreRefSchema.pick({ _id: true, name: true }))
       .optional()
-      .describe(
-        "Centres (branch/company) assigned to the user. LMS field courseCentre means Centre, never Class. Prefer query.centreId to filter.",
-      ),
-    admissionNumber: z.string().optional().describe("Admission number; often mirrors the user id"),
+      .describe("Centres assigned to the user"),
+    admissionNumber: z
+      .string()
+      .optional()
+      .describe("Admission number; often mirrors the user id"),
     createdAt: ISODateSchema.optional(),
     updatedAt: ISODateSchema.optional(),
     fullName: z
       .string()
       .optional()
       .meta({ ui: { roles: ["label", "search"] } }),
-    email: z
-      .email()
-      .max(150)
-      .meta({ ui: { role: "detail" } }),
+    email: lmsEmailSchema.meta({ ui: { role: "detail" } }),
     _id: mongoIdSchema.meta({ ui: { role: "value" } }),
   })
-  .describe("User from LMS users collection");
+  .describe("User");
 
 const userInfoListQuerySchema = paginatedQuerySchema(
   userInfoRowSchema,
   z.object({
     centreId: mongoIdSchema.optional().describe(CENTRE_ID_DESCRIBE),
-    userType: mongoIdSchema.optional().describe("Filter by user type / role ids"),
+    userType: mongoIdSchema
+      .optional()
+      .describe("Filter by user type / role ids"),
   }),
 );
 

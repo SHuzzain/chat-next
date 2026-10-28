@@ -2,7 +2,7 @@
 
 import { forwardRef } from "react";
 import { AssistantModalPrimitive } from "@assistant-ui/react";
-import { BotIcon, XIcon } from "lucide-react";
+import { BotIcon, ChevronDownIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -27,7 +27,7 @@ const ModalTriggerButton = forwardRef<
       className="absolute size-6 transition-all data-[state=open]:scale-0 data-[state=open]:rotate-90"
       aria-hidden
     />
-    <XIcon
+    <ChevronDownIcon
       data-state={state}
       className="absolute size-6 transition-all data-[state=closed]:scale-0 data-[state=closed]:-rotate-90"
       aria-hidden

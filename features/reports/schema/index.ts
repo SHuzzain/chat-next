@@ -1,6 +1,20 @@
 export {
+  classScoreFields,
+  enrollFields,
+  reportUserClassScoreRowSchema,
   reportUserClassScoreSchema,
+  reportUserClassScoreWireRowSchema,
+  reportUserEnrollRowSchema,
   reportUserEnrollSchema,
+  reportUserEnrollWireRowSchema,
 } from "./user-schema";
-export { reportLessonOverallSchema } from "./lesson-overall.schema";
-export { reportClassUsersSchema, reportClassUsersRowSchema } from "./class-users.schema";
+export {
+  reportLessonOverallRowSchema,
+  reportLessonOverallSchema,
+} from "./lesson-overall.schema";
+export {
+  classUsersFields,
+  reportClassUsersRowSchema,
+  reportClassUsersSchema,
+  reportClassUsersWireRowSchema,
+} from "./class-users.schema";

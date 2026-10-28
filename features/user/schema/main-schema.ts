@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 import { sourceOrginSchema } from "@/features/organisation/schema";
-import { mongoIdSchema, populatedRefSchema } from "@/lib/zod/primitives";
+import {
+  lmsEmailSchema,
+  mongoIdSchema,
+  populatedRefSchema,
+} from "@/lib/zod/primitives";
 
 export { sourceOrginSchema };
 
@@ -112,7 +116,7 @@ export const instructorSchema = z.looseObject({
   nationality: z.string().optional(),
   title: z.string().optional(),
   category: instructorCategorySchema.optional(),
-  alternativeEmail: z.email().optional(),
+  alternativeEmail: lmsEmailSchema,
   mobilePhone: z.string().optional(),
   linkedInUrl: z.string().optional(),
   website: z.string().optional(),
@@ -140,7 +144,7 @@ export const instructorSchema = z.looseObject({
 
 export const userSchema = z.looseObject({
   _id: mongoIdSchema,
-  email: z.email().max(150),
+  email: lmsEmailSchema,
   courseCentre: z.array(populatedRefSchema).default([]),
   username: z.string().max(150).optional(),
   firstName: z.string().max(50).optional(),

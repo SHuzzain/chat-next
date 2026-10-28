@@ -20,14 +20,29 @@ function parentInit(event: MessageEvent): LmsSession | undefined {
   };
 }
 
+/**
+ * LMS host iframe chat. The host draws the panel; this fills it with the same
+ * Thread UI used inside the home-page AssistantModal.
+ */
+function trimToken(value: string | undefined): string | undefined {
+  const token = value?.trim().replace(/^["']|["']$/g, "");
+  return token || undefined;
+}
+
 export function EmbedChat() {
   const theme = useSearchParams().get("theme") === "dark" ? "dark" : "light";
-  const [session, setSession] = useState<LmsSession>();
+  const [session, setSession] = useState<LmsSession | undefined>(() => {
+    const token = trimToken(process.env.NEXT_PUBLIC_DEV_LMS_TOKEN);
+    return token ? { token } : undefined;
+  });
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       const next = parentInit(event);
-      if (next) setSession(next);
+      if (!next) return;
+      const token = trimToken(next.token);
+      if (!token) return;
+      setSession({ token, role: next.role });
     };
 
     window.addEventListener("message", onMessage);

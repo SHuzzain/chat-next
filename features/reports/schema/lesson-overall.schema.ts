@@ -29,7 +29,7 @@ const unittypeSchema = z.enum([
   "CLASSROOM",
 ]);
 
-const ReportlessonOverallRowSchema = z.object({
+export const reportLessonOverallRowSchema = z.object({
   centre: z
     .array(centreRefSchema.optional())
     .optional()
@@ -64,9 +64,8 @@ const ReportlessonOverallRowSchema = z.object({
   unit: z
     .string()
     .optional()
-    .describe(
-      "Lesson name; the LMS API uses the field name 'unit' for a lesson",
-    ),
+    .describe("Lesson name")
+    .meta({ ui: { roles: ["label", "search"] } }),
 
   unittype: unittypeSchema
     .optional()
@@ -77,28 +76,28 @@ const ReportlessonOverallRowSchema = z.object({
   user: z
     .string()
     .optional()
-    .describe("Name of the learner associated with the lesson activity"),
+    .describe("Name of the learner associated with the lesson activity")
+    .meta({ ui: { role: "detail" } }),
 
   _id: mongoIdSchema
     .optional()
-    .describe("User ID associated with this lesson report record"),
+    .describe("User ID associated with this lesson report record")
+    .meta({ ui: { role: "value" } }),
 });
 
 const ReportlessonOverallQuerySchema = withAllowedSort(
   paginationQuerySchema.extend({
-    classId: mongoIdSchema.describe(
-      `${CLASS_ID_DESCRIBE} Required for this report.`,
-    ),
+    classId: mongoIdSchema.describe(CLASS_ID_DESCRIBE),
   }),
-  ReportlessonOverallRowSchema,
+  reportLessonOverallRowSchema,
 );
 
 const ReportLessonOverallBodySchema = lmsListBodySchema(
-  ReportlessonOverallRowSchema,
+  reportLessonOverallRowSchema,
 );
 
 export const reportLessonOverallSchema = {
-  output: lmsPageSchema(ReportlessonOverallRowSchema),
+  output: lmsPageSchema(reportLessonOverallRowSchema),
   query: ReportlessonOverallQuerySchema,
   body: ReportLessonOverallBodySchema,
 };
