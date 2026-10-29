@@ -154,6 +154,8 @@ export function toWidgetAdvanceFilterOutput(output: {
     purpose: ListPurpose;
     selection: ListSelection;
     rowSchema: z.ZodType;
+    query?: Record<string, unknown>;
+    body?: Record<string, unknown>;
   };
 }): { type: "json"; value: ListModelValue } {
   const { schema, config } = output;
@@ -196,6 +198,8 @@ export function toWidgetAdvanceFilterOutput(output: {
           totalPage: schema?.totalPage ?? 1,
           columns: table,
           data: tableRows(data, table, config.rowSchema),
+          ...(config.query ? { query: config.query } : {}),
+          ...(config.body ? { body: config.body } : {}),
         },
         instruction:
           "Call widget_data_table now with the given arguments. " +

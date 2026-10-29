@@ -49,11 +49,14 @@ const renderDataTable: ToolCallMessagePartComponent = ({ args }) => {
   return (
     <DataTable
       entity={parsed.data.entity}
+      source={parsed.data.source}
       columns={parsed.data.columns}
       rows={rowsOf(parsed.data.data)}
       totalItems={parsed.data.totalItems}
       currentPage={parsed.data.currentPage}
       totalPage={parsed.data.totalPage}
+      query={parsed.data.query}
+      body={parsed.data.body}
     />
   );
 };

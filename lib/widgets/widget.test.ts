@@ -153,7 +153,22 @@ describe("toWidgetAdvanceFilterOutput", () => {
       _id: `id-${index}`,
       name: `User ${index}`,
     }));
-    const value = valueOf(widget({ rows, totalItems: 13, purpose: "show" }));
+    const value = valueOf(
+      toWidgetAdvanceFilterOutput({
+        schema: page(rows, 13),
+        config: {
+          entity: "Learner",
+          source: "users",
+          purpose: "show",
+          selection: "single",
+          rowSchema,
+          query: { page: 1, rowPerPage: 12 },
+          body: {
+            advanceFilterSelect: ["_id", "fullName", "email"],
+          },
+        },
+      }),
+    );
     assert.equal(value.nextTool, "widget_data_table");
     assert.match(String(value.instruction), /Call widget_data_table/);
     const args = widgetDataTableParameters.parse(value.arguments);
@@ -168,6 +183,10 @@ describe("toWidgetAdvanceFilterOutput", () => {
       args.data,
       rows.map((row) => ({ _id: row._id, name: row.name })),
     );
+    assert.deepEqual(args.query, { page: 1, rowPerPage: 12 });
+    assert.deepEqual(args.body, {
+      advanceFilterSelect: ["_id", "fullName", "email"],
+    });
   });
 
   it("keeps nested label paths intact for roster tables", () => {

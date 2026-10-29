@@ -31,6 +31,11 @@ function asWidgetPage(value: unknown): WidgetPage {
   };
 }
 
+function asRequestRecord(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  return value as Record<string, unknown>;
+}
+
 function widgetView(
   data: unknown,
   config: {
@@ -40,6 +45,7 @@ function widgetView(
   },
   purpose: ListPurpose,
   selection: ListSelection,
+  request?: { query?: unknown; body?: unknown },
 ) {
   return toWidgetAdvanceFilterOutput({
     schema: asWidgetPage(data),
@@ -49,6 +55,8 @@ function widgetView(
       purpose,
       selection,
       rowSchema: config.rowSchema,
+      query: asRequestRecord(request?.query),
+      body: asRequestRecord(request?.body),
     },
   }).value;
 }
@@ -105,15 +113,20 @@ export function createPaginatedTool<
     }),
     execute: async (input, ctx) => {
       const parsed = input as ToolInput;
-      const body = {
-        ...parsed.body,
+      const incomingBody: Record<string, unknown> =
+        parsed.body &&
+        typeof parsed.body === "object" &&
+        !Array.isArray(parsed.body)
+          ? Object.assign({}, parsed.body as Record<string, unknown>)
+          : {};
+      const body = Object.assign({}, incomingBody, {
         advanceFilterSelect: mergeDisplaySelect(
-          (
-            parsed.body as { advanceFilterSelect?: string[] } | undefined
-          )?.advanceFilterSelect,
+          Array.isArray(incomingBody.advanceFilterSelect)
+            ? (incomingBody.advanceFilterSelect as string[])
+            : undefined,
           config.widget.rowSchema,
         ),
-      } as z.infer<TBody>;
+      }) as z.infer<TBody>;
       const data = config.outputSchema.parse(
         await config.execute(
           { query: parsed.query, body },
@@ -127,7 +140,10 @@ export function createPaginatedTool<
         data,
         purpose,
         selection,
-        view: widgetView(data, config.widget, purpose, selection),
+        view: widgetView(data, config.widget, purpose, selection, {
+          query: parsed.query,
+          body,
+        }),
       };
     },
     toModelOutput: (output) => {

@@ -1,32 +1,13 @@
-import { classListSchema } from "@/features/class/schema";
-import { listClasses } from "@/features/class/class.api";
-import { classRowSchema } from "@/features/class/schema/class-list";
-import { listUsers } from "@/features/user/user.api";
-import { userInfoListSchema, userInfoRowSchema } from "@/features/user/schema";
 import { lmsAuthFromRequest } from "@/lib/auth";
 import { fieldPaths } from "@/lib/tools/api-field-paths";
 import { LmsApiError } from "@/lib/tools/api-client";
 import { cell } from "@/lib/widgets/present";
+import { getWidgetSource, widgetSourceSchema } from "@/lib/widgets/register";
 import { fieldWithRole } from "@/lib/widgets/roles";
 import { z } from "zod";
 
-const sources = {
-  classes: {
-    list: listClasses,
-    query: classListSchema.query,
-    body: classListSchema.body,
-    rowSchema: classRowSchema,
-  },
-  users: {
-    list: listUsers,
-    query: userInfoListSchema.query,
-    body: userInfoListSchema.body,
-    rowSchema: userInfoRowSchema,
-  },
-} as const;
-
 const requestSchema = z.object({
-  source: z.enum(["classes", "users"]),
+  source: widgetSourceSchema,
   query: z.record(z.string(), z.unknown()).optional(),
   body: z.record(z.string(), z.unknown()).optional(),
   search: z.string().optional(),
@@ -40,6 +21,52 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
+function readPath(row: Record<string, unknown>, path: string): unknown {
+  let current: unknown = row;
+  for (const key of path.split(".")) {
+    if (!current || typeof current !== "object" || Array.isArray(current)) {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[key];
+  }
+  return current;
+}
+
+function setPath(
+  target: Record<string, unknown>,
+  path: string,
+  value: unknown,
+): void {
+  const parts = path.split(".");
+  let current = target;
+  for (let index = 0; index < parts.length - 1; index += 1) {
+    const part = parts[index]!;
+    const next = current[part];
+    if (!next || typeof next !== "object" || Array.isArray(next)) {
+      current[part] = {};
+    }
+    current = current[part] as Record<string, unknown>;
+  }
+  current[parts[parts.length - 1]!] = value;
+}
+
+function projectRows(
+  rows: Array<Record<string, unknown>>,
+  columns: string[],
+  valueKey: string,
+): Array<Record<string, unknown>> {
+  if (columns.length === 0) return rows;
+  const keys = [...new Set([valueKey, ...columns])];
+  return rows.map((row) => {
+    const slim: Record<string, unknown> = {};
+    for (const key of keys) {
+      const value = readPath(row, key);
+      if (value !== undefined) setPath(slim, key, value);
+    }
+    return slim;
+  });
+}
+
 export async function POST(request: Request) {
   const auth = lmsAuthFromRequest(request);
   if (!auth) {
@@ -51,13 +78,16 @@ export async function POST(request: Request) {
     return Response.json({ message: "Invalid search request." }, { status: 400 });
   }
 
-  const source = sources[parsed.data.source];
+  const source = getWidgetSource(parsed.data.source);
   const search = parsed.data.search?.trim() ?? "";
   const searchField =
-    fieldWithRole(source.rowSchema, "search") ?? fieldWithRole(source.rowSchema, "label");
+    fieldWithRole(source.rowSchema, "search") ??
+    fieldWithRole(source.rowSchema, "label");
   const rawBody = { ...parsed.data.body };
   if (search && searchField) {
-    const existing = Array.isArray(rawBody.advanceFilter) ? rawBody.advanceFilter : [];
+    const existing = Array.isArray(rawBody.advanceFilter)
+      ? rawBody.advanceFilter
+      : [];
     rawBody.advanceFilter = [
       ...existing,
       { field: searchField, type: "Contains", value: [search] },
@@ -92,16 +122,18 @@ export async function POST(request: Request) {
       return [detail ? { id, label, detail } : { id, label }];
     });
 
+    const valueKey = fields.value ?? "_id";
     return Response.json({
       options,
-      rows: rows.map((row) => Object.fromEntries(columns.map((key) => [key, cell(row, key)]))),
+      rows: projectRows(rows, columns, valueKey),
       totalItems: page.totalItems ?? options.length,
       totalPage: page.totalPage ?? 1,
-      currentPage: page.currentPage ?? query.data.page ?? 1,
+      currentPage: page.currentPage ?? (query.data as { page?: number }).page ?? 1,
     });
   } catch (error) {
     const status = error instanceof LmsApiError ? error.status : 500;
-    const message = error instanceof LmsApiError ? error.message : "LMS search failed.";
+    const message =
+      error instanceof LmsApiError ? error.message : "LMS search failed.";
     return Response.json({ message }, { status });
   }
 }

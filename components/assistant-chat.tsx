@@ -5,6 +5,7 @@ import { Thread } from "@/components/thread.aui";
 import { ChatThreadProvider } from "@/components/chat-threads";
 import { EveAuthorization } from "@/components/eve-authorization";
 import { LmsSessionProvider } from "@/components/lms-session";
+import { QueryProvider } from "@/components/query-provider";
 import {
   EveWidgetFallback,
   eveToolkit,
@@ -91,14 +92,16 @@ function EveChat({
       })}
     >
       <LmsSessionProvider token={token} role={role}>
-        <EveAuthorization />
-        {presentation === "fullscreen" ? (
-          <div className="h-full">
+        <QueryProvider>
+          <EveAuthorization />
+          {presentation === "fullscreen" ? (
+            <div className="h-full">
+              <Thread components={{ ToolFallback: EveWidgetFallback }} />
+            </div>
+          ) : (
             <Thread components={{ ToolFallback: EveWidgetFallback }} />
-          </div>
-        ) : (
-          <Thread components={{ ToolFallback: EveWidgetFallback }} />
-        )}
+          )}
+        </QueryProvider>
       </LmsSessionProvider>
     </AssistantRuntimeProvider>
   );

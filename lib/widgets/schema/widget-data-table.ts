@@ -26,6 +26,14 @@ export const widgetDataTableParameters = z.object({
   data: z
     .array(z.record(z.string(), z.unknown()))
     .describe("Rows to display. Pass through from the list tool arguments."),
+  query: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe("Original list query (page, ids, sort). Replay on pagination."),
+  body: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe("Original list body (filters, select). Replay on pagination."),
 });
 
 export type WidgetDataTableArgs = z.infer<typeof widgetDataTableParameters>;
