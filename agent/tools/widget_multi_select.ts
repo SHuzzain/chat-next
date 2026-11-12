@@ -14,11 +14,13 @@ export default defineTool({
 Show checkboxes so the user can pick one or more matching records.
 
 Call this only when a list tool result sets nextTool to widget_multi_select.
-Pass that result's arguments through unchanged. Then wait for the user to choose. Do not guess ids.
+Write one short line asking the user to verify which matches, then pass that
+result's arguments through unchanged. Wait for the user to choose. Do not guess ids.
   `,
   inputSchema: widgetMultiSelectParameters,
   outputSchema: widgetMultiSelectResult,
   execute: async (args) => args,
+  endsTurn: true,
   label: {
     start: () => "Showing choices…",
     complete: () => "Choices shown",

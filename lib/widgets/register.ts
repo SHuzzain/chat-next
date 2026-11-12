@@ -5,13 +5,15 @@ import { classListSchema } from "@/features/class/schema";
 import { classRowSchema } from "@/features/class/schema/class-list";
 import { listCourseCentresByAdvanceFilter } from "@/features/centres/centre.api";
 import {
-  courseCentreListSchema,
-  courseCentreRowSchema,
+  centreListSchema,
+  centreRowSchema,
 } from "@/features/centres/schema";
 import {
   listClassEnrollmentAndProgressReports,
   listClassUsersReports,
   listLessonOverallReports,
+  listLiveClassReports,
+  listLiveClassSessionUsers,
   listUserClassScoreReports,
   listUserEnrollReports,
 } from "@/features/reports/report.api";
@@ -20,6 +22,10 @@ import {
   reportClassUsersSchema,
   reportLessonOverallRowSchema,
   reportLessonOverallSchema,
+  reportLiveClassRowSchema,
+  reportLiveClassSchema,
+  reportLiveSessionUserRowSchema,
+  reportLiveSessionUserSchema,
   reportUserClassScoreRowSchema,
   reportUserClassScoreSchema,
   reportUserEnrollRowSchema,
@@ -31,6 +37,11 @@ import {
 } from "@/features/reports/schema/class-enrollment-and-progress";
 import { listUsers } from "@/features/user/user.api";
 import { userInfoListSchema, userInfoRowSchema } from "@/features/user/schema";
+import { listUserTypes } from "@/features/user-type/user-type.api";
+import {
+  userTypeListRowSchema,
+  userTypeListSchema,
+} from "@/features/user-type/schema/user-type-list";
 import type { LmsAuth } from "@/lib/auth";
 
 export type WidgetListPage = {
@@ -77,9 +88,15 @@ export const widgetSources = {
   },
   centres: {
     list: asList(listCourseCentresByAdvanceFilter),
-    query: courseCentreListSchema.query,
-    body: courseCentreListSchema.body,
-    rowSchema: courseCentreRowSchema,
+    query: centreListSchema.query,
+    body: centreListSchema.body,
+    rowSchema: centreRowSchema,
+  },
+  "user-types": {
+    list: asList(listUserTypes),
+    query: userTypeListSchema.query,
+    body: userTypeListSchema.body,
+    rowSchema: userTypeListRowSchema,
   },
   "learner-enrollment-report": {
     list: asList(listUserEnrollReports),
@@ -110,6 +127,18 @@ export const widgetSources = {
     query: reportClassUsersSchema.query,
     body: reportClassUsersSchema.body,
     rowSchema: reportClassUsersRowSchema,
+  },
+  "live-class-report": {
+    list: asList(listLiveClassReports),
+    query: reportLiveClassSchema.query,
+    body: reportLiveClassSchema.body,
+    rowSchema: reportLiveClassRowSchema,
+  },
+  "live-class-session-users": {
+    list: asList(listLiveClassSessionUsers),
+    query: reportLiveSessionUserSchema.query,
+    body: reportLiveSessionUserSchema.body,
+    rowSchema: reportLiveSessionUserRowSchema,
   },
 } as const satisfies Record<string, WidgetSource>;
 

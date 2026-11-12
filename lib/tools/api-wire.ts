@@ -18,6 +18,19 @@ export const CLASS_ID_DESCRIBE = "Class id";
 
 export const PARENT_COURSE_ID_DESCRIBE = "Parent Course id";
 
+/**
+ * Shared agent → LMS segment renames.
+ * Nested paths like `class.name` rewrite automatically via FieldAlias segments.
+ */
+export const classCentreAliases = {
+  class: "course",
+  centre: "courseCentre",
+} as const;
+
+export const centreAlias = {
+  centre: "courseCentre",
+} as const;
+
 /** Agent filter/select/sort path → LMS path. */
 export type FieldAliases = Record<string, string>;
 

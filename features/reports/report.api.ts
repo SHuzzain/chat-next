@@ -6,22 +6,34 @@ import type {
   ClassEnrollmentAndProgress,
   ReportClassUsers,
   ReportLessonOverall,
+  ReportLiveClass,
+  ReportLiveSessionUser,
   ReportUserClassScore,
   ReportUserEnroll,
 } from "./report.types";
 import {
+  classEnrollmentAndProgressSchema,
+  classEnrollmentAndProgressWireRowSchema,
+  classEnrollmentFields,
   classScoreFields,
   classUsersFields,
   enrollFields,
+  lessonOverallFields,
+  liveClassFields,
+  liveSessionUserFields,
   reportClassUsersSchema,
   reportClassUsersWireRowSchema,
   reportLessonOverallSchema,
+  reportLessonOverallWireRowSchema,
+  reportLiveClassSchema,
+  reportLiveClassWireRowSchema,
+  reportLiveSessionUserSchema,
+  reportLiveSessionUserWireRowSchema,
   reportUserClassScoreSchema,
   reportUserClassScoreWireRowSchema,
   reportUserEnrollSchema,
   reportUserEnrollWireRowSchema,
 } from "./schema";
-import { classEnrollmentAndProgressSchema } from "./schema/class-enrollment-and-progress";
 
 function warnRole(auth: LmsAuth) {
   if (!canViewUserReport(auth)) {
@@ -85,15 +97,21 @@ export async function listLessonOverallReports(
 ): Promise<ReportLessonOverall["output"]> {
   const parseQuery = reportLessonOverallSchema.query.parse(query);
   const parsedBody = reportLessonOverallSchema.body.parse(body ?? {});
+  const wire = lessonOverallFields.toWireRequest({
+    query: parseQuery as Record<string, unknown>,
+    body: parsedBody as Record<string, unknown>,
+  });
 
   warnRole(auth);
   const payload = await lmsFetch("report/get-overall-report", {
     method: "POST",
-    query: parseQuery,
-    body: parsedBody,
+    query: wire.query,
+    body: wire.body,
     auth,
   });
-  return reportLessonOverallSchema.output.parse(payload);
+  return reportLessonOverallSchema.output.parse(
+    lessonOverallFields.readPage(reportLessonOverallWireRowSchema, payload),
+  );
 }
 
 export async function listClassEnrollmentAndProgressReports(
@@ -103,14 +121,23 @@ export async function listClassEnrollmentAndProgressReports(
 ) {
   const parseQuery = classEnrollmentAndProgressSchema.query.parse(query);
   const parsedBody = classEnrollmentAndProgressSchema.body.parse(body ?? {});
+  const wire = classEnrollmentFields.toWireRequest({
+    query: parseQuery as Record<string, unknown>,
+    body: parsedBody as Record<string, unknown>,
+  });
   warnRole(auth);
   const payload = await lmsFetch("reports/courses", {
     method: "POST",
-    query: parseQuery,
-    body: parsedBody,
+    query: wire.query,
+    body: wire.body,
     auth,
   });
-  return classEnrollmentAndProgressSchema.output.parse(payload);
+  return classEnrollmentAndProgressSchema.output.parse(
+    classEnrollmentFields.readPage(
+      classEnrollmentAndProgressWireRowSchema,
+      payload,
+    ),
+  );
 }
 
 export async function listClassUsersReports(
@@ -133,5 +160,59 @@ export async function listClassUsersReports(
   });
   return reportClassUsersSchema.output.parse(
     classUsersFields.readPage(reportClassUsersWireRowSchema, payload),
+  );
+}
+
+export async function listLiveClassReports(
+  query: ReportLiveClass["query"],
+  auth: LmsAuth,
+  body: ReportLiveClass["body"],
+): Promise<ReportLiveClass["output"]> {
+  const { classId, ...rest } = reportLiveClassSchema.query.parse(query);
+  const parsedBody = reportLiveClassSchema.body.parse(body ?? {});
+  // LMS expects courseId (Class id), not the default FieldAlias classId→course.
+  const wire = liveClassFields.toWireRequest({
+    query: {
+      ...(rest as Record<string, unknown>),
+      ...(classId ? { courseId: classId } : {}),
+    },
+    body: parsedBody as Record<string, unknown>,
+  });
+  warnRole(auth);
+  const payload = await lmsFetch("reports/get-course-liveclasses-reports", {
+    method: "POST",
+    query: wire.query,
+    body: wire.body,
+    auth,
+  });
+  return reportLiveClassSchema.output.parse(
+    liveClassFields.readPage(reportLiveClassWireRowSchema, payload),
+  );
+}
+
+export async function listLiveClassSessionUsers(
+  query: ReportLiveSessionUser["query"],
+  auth: LmsAuth,
+  body: ReportLiveSessionUser["body"],
+): Promise<ReportLiveSessionUser["output"]> {
+  const { eventId, ...rest } =
+    reportLiveSessionUserSchema.query.parse(query);
+  const parsedBody = reportLiveSessionUserSchema.body.parse(body ?? {});
+  const wire = liveSessionUserFields.toWireRequest({
+    query: rest as Record<string, unknown>,
+    body: parsedBody as Record<string, unknown>,
+  });
+  warnRole(auth);
+  const payload = await lmsFetch(`session-users/${eventId}/users`, {
+    method: "POST",
+    query: wire.query,
+    body: wire.body,
+    auth,
+  });
+  return reportLiveSessionUserSchema.output.parse(
+    liveSessionUserFields.readPage(
+      reportLiveSessionUserWireRowSchema,
+      payload,
+    ),
   );
 }

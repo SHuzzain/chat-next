@@ -9,8 +9,10 @@ import {
   paginationQuerySchema,
   withAllowedSort,
 } from "@/lib/tools/api-pagination";
-import { CLASS_ID_DESCRIBE } from "@/lib/tools/api-wire";
+import { CLASS_ID_DESCRIBE, FieldAlias } from "@/lib/tools/api-wire";
 import z from "zod";
+
+import { centreAlias } from "./aliases";
 
 const centreRefSchema = courseCentreRefSchema;
 
@@ -29,6 +31,12 @@ const unittypeSchema = z.enum([
   "CLASSROOM",
 ]);
 
+/** Agent path → LMS path. `class` / `unit` already match wire keys. */
+export const lessonOverallFields = new FieldAlias({
+  ...centreAlias,
+});
+
+/** Agent-facing row for POST report/get-overall-report. */
 export const reportLessonOverallRowSchema = z.object({
   centre: z
     .array(centreRefSchema.optional())
@@ -83,6 +91,19 @@ export const reportLessonOverallRowSchema = z.object({
     .optional()
     .describe("User ID associated with this lesson report record")
     .meta({ ui: { role: "value" } }),
+});
+
+/** LMS wire row for POST report/get-overall-report. */
+export const reportLessonOverallWireRowSchema = z.object({
+  courseCentre: z.array(centreRefSchema.optional()).optional(),
+  class: z.string().optional(),
+  startDate: z.union([ISODateSchema, z.null()]).optional(),
+  endDate: z.union([ISODateSchema, z.null()]).optional(),
+  totalDuration: z.number().optional(),
+  unit: z.string().optional(),
+  unittype: unittypeSchema.optional(),
+  user: z.string().optional(),
+  _id: mongoIdSchema.optional(),
 });
 
 const ReportlessonOverallQuerySchema = withAllowedSort(

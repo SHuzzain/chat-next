@@ -2,7 +2,17 @@ import * as React from "react"
 import { Input as InputPrimitive } from "@base-ui/react/input"
 import { cn } from "cn"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+type InputProps = React.ComponentProps<"input"> &
+  Pick<
+    React.ComponentProps<typeof InputPrimitive>,
+    "onValueChange" | "defaultValue" | "value"
+  >
+
+/**
+ * Base UI Input is controlled via `value` + `onValueChange` (not only `onChange`).
+ * Prefer `onValueChange` for controlled fields.
+ */
+function Input({ className, type, ...props }: InputProps) {
   return (
     <InputPrimitive
       type={type}

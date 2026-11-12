@@ -27,6 +27,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  ActionLogLine,
+  ASK_WIDGET_TOOLS,
+  friendlyToolLabel,
+} from "@/components/action-log";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -1154,12 +1159,8 @@ const ToolFallbackImpl: ToolCallMessagePartComponent = ({
   approval,
   respondToApproval,
 }) => {
-  const isCancelled =
-    status?.type === "incomplete" && status.reason === "cancelled";
+  const elapsedMs = useToolCallElapsed();
   const isRequiresAction = status?.type === "requires-action";
-  const shouldRenderApproval =
-    isRequiresAction && offersInterruptAction(status, approval, interrupt);
-
   const [open, setOpen] = useState(isRequiresAction);
   const [prevRequiresAction, setPrevRequiresAction] =
     useState(isRequiresAction);
@@ -1168,9 +1169,45 @@ const ToolFallbackImpl: ToolCallMessagePartComponent = ({
     if (isRequiresAction) setOpen(true);
   }
 
+  // Ask/choice widgets render their own UI — never show tool-call chrome.
+  if (ASK_WIDGET_TOOLS.has(toolName)) return null;
+
+  const isCancelled =
+    status?.type === "incomplete" && status.reason === "cancelled";
+  const isFailed =
+    status?.type === "incomplete" && status.reason !== "cancelled";
+  const isRunning = status?.type === "running";
+  const shouldRenderApproval =
+    isRequiresAction && offersInterruptAction(status, approval, interrupt);
+
+  const label = isCancelled
+    ? `${friendlyToolLabel(toolName)} (cancelled)`
+    : isFailed
+      ? `${friendlyToolLabel(toolName)} failed`
+      : friendlyToolLabel(toolName);
+
+  // Approval gates still need the full controls; otherwise one action-log line.
+  if (!shouldRenderApproval && !isSettled(approval)) {
+    return (
+      <ActionLogLine
+        label={label}
+        active={isRunning}
+        elapsedMs={
+          !isRunning && elapsedMs !== undefined ? elapsedMs : undefined
+        }
+        failed={isFailed}
+      />
+    );
+  }
+
   return (
     <ToolFallbackRoot open={open} onOpenChange={setOpen}>
-      <ToolFallbackTrigger toolName={toolName} status={status} />
+      <ActionLogLine
+        label={label}
+        active={isRunning}
+        elapsedMs={!isRunning && elapsedMs !== undefined ? elapsedMs : undefined}
+        failed={isFailed}
+      />
       <ToolFallbackContent>
         <ToolFallbackError status={status} />
         <ToolFallbackArgs

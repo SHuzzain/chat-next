@@ -1,16 +1,17 @@
 "use client";
 
+import { TextAnimate } from "@/components/ui/text-animate";
 import { TooltipIconButton } from "@/components/tooltip-icon-button";
 import { useLmsSession } from "@/components/lms-session";
-import { cn } from "@/lib/utils";
+import { displayThreadTitle } from "@/components/threads-history";
 import { useAuiState } from "@assistant-ui/react";
 import { HistoryIcon, PlusIcon } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
   useContext,
   useEffect,
   useId,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -138,129 +139,42 @@ export function SavedTranscript() {
   );
 }
 
-function isConversation(value: unknown): value is SavedConversation {
-  if (!value || typeof value !== "object") return false;
-  const row = value as Partial<SavedConversation>;
-  return (
-    typeof row.id === "string" &&
-    typeof row.title === "string" &&
-    typeof row.updatedAt === "string"
-  );
+function historyHrefFor(pathname: string) {
+  return pathname.startsWith("/embed") ? "/embed/history" : "/history";
 }
 
 export function ChatHeader() {
-  const { token, role } = useLmsSession();
-  const { activeId, selectedTitle, startThread, openThread } = useChatThreads();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { startThread } = useChatThreads();
   const liveTitle = useAuiState((state) => firstUserText(state.thread.messages));
-  const title = liveTitle || selectedTitle || "New Chat";
+  const { selectedTitle } = useChatThreads();
+  const title = displayThreadTitle(liveTitle || selectedTitle);
   const titleId = useId();
-  const [open, setOpen] = useState(false);
-  const [conversations, setConversations] = useState<SavedConversation[]>([]);
-  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!panelRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const controller = new AbortController();
-    setStatus("loading");
-    fetch("/api/conversations", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...(role ? { "x-lms-role": role } : {}),
-      },
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("conversation list failed");
-        const body: unknown = await response.json();
-        const rows =
-          body && typeof body === "object" && "conversations" in body
-            ? body.conversations
-            : [];
-        setConversations(Array.isArray(rows) ? rows.filter(isConversation) : []);
-        setStatus("idle");
-      })
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setStatus("error");
-      });
-    return () => controller.abort();
-  }, [open, role, token]);
 
   return (
-    <div ref={panelRef} className="relative shrink-0">
-      <header className="flex items-center gap-2 px-3 py-2">
-        <p id={titleId} className="min-w-0 flex-1 truncate text-sm font-medium">
+    <header className="relative flex shrink-0 items-center gap-2 px-3 py-2">
+      <div id={titleId} className="min-w-0 flex-1">
+        <TextAnimate
+          key={title}
+          animation="blurInUp"
+          by="text"
+          as="p"
+          once
+          className="truncate text-sm font-medium"
+        >
           {title}
-        </p>
-        <TooltipIconButton
-          tooltip="Threads"
-          aria-expanded={open}
-          aria-controls={open ? `${titleId}-threads` : undefined}
-          onClick={() => setOpen((current) => !current)}
-        >
-          <HistoryIcon />
-        </TooltipIconButton>
-        <TooltipIconButton
-          tooltip="New thread"
-          onClick={() => {
-            setOpen(false);
-            startThread();
-          }}
-        >
-          <PlusIcon />
-        </TooltipIconButton>
-      </header>
-      {open && (
-        <div
-          id={`${titleId}-threads`}
-          role="region"
-          aria-label="Threads"
-          className="bg-popover text-popover-foreground absolute inset-x-2 top-full z-20 overflow-hidden rounded-lg border shadow-md"
-        >
-          {status === "loading" && (
-            <p className="text-muted-foreground px-3 py-3 text-sm">Loading conversations…</p>
-          )}
-          {status === "error" && (
-            <p className="text-muted-foreground px-3 py-3 text-sm">
-              Conversations could not be loaded.
-            </p>
-          )}
-          {status === "idle" && conversations.length === 0 && (
-            <p className="text-muted-foreground px-3 py-3 text-sm">No conversations yet.</p>
-          )}
-          {status === "idle" && conversations.length > 0 && (
-            <ul className="max-h-80 overflow-y-auto py-1">
-              {conversations.map((conversation) => (
-                <li key={conversation.id}>
-                  <button
-                    type="button"
-                    className={cn(
-                      "hover:bg-muted w-full truncate px-3 py-2 text-left text-sm",
-                      conversation.id === activeId && "bg-muted",
-                    )}
-                    onClick={() => {
-                      setOpen(false);
-                      openThread(conversation);
-                    }}
-                  >
-                    {conversation.title}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-    </div>
+        </TextAnimate>
+      </div>
+      <TooltipIconButton
+        tooltip="Threads"
+        onClick={() => router.push(historyHrefFor(pathname))}
+      >
+        <HistoryIcon />
+      </TooltipIconButton>
+      <TooltipIconButton tooltip="New thread" onClick={() => startThread()}>
+        <PlusIcon />
+      </TooltipIconButton>
+    </header>
   );
 }

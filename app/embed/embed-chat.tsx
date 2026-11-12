@@ -1,8 +1,9 @@
 "use client";
 
 import { AssistantChat } from "@/components/assistant-chat";
+import { readEmbedSession, saveEmbedSession } from "@/lib/lms-embed-session";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 type LmsSession = {
   token: string;
@@ -29,9 +30,13 @@ function trimToken(value: string | undefined): string | undefined {
   return token || undefined;
 }
 
-export function EmbedChat() {
-  const theme = useSearchParams().get("theme") === "dark" ? "dark" : "light";
+function EmbedChatBody({ theme }: { theme: "dark" | "light" }) {
+  const searchParams = useSearchParams();
+  const threadId = searchParams.get("thread")?.trim();
+  const title = searchParams.get("title")?.trim();
   const [session, setSession] = useState<LmsSession | undefined>(() => {
+    const stored = readEmbedSession();
+    if (stored) return stored;
     const token = trimToken(process.env.NEXT_PUBLIC_DEV_LMS_TOKEN);
     return token ? { token } : undefined;
   });
@@ -42,7 +47,9 @@ export function EmbedChat() {
       if (!next) return;
       const token = trimToken(next.token);
       if (!token) return;
-      setSession({ token, role: next.role });
+      const saved = { token, role: next.role };
+      saveEmbedSession(saved);
+      setSession(saved);
     };
 
     window.addEventListener("message", onMessage);
@@ -50,14 +57,22 @@ export function EmbedChat() {
     return () => window.removeEventListener("message", onMessage);
   }, []);
 
+  const initialThread =
+    threadId && title
+      ? { id: threadId, title }
+      : threadId
+        ? { id: threadId, title: "Chat" }
+        : undefined;
+
   return (
     <div className={theme === "dark" ? "dark h-full" : "h-full"}>
       {session ? (
         <AssistantChat
-          key={session.token}
+          key={`${session.token}:${initialThread?.id ?? "new"}`}
           token={session.token}
           role={session.role}
           presentation="fullscreen"
+          initialThread={initialThread}
         />
       ) : (
         <div className="text-muted-foreground flex h-full items-center justify-center p-6 text-sm">
@@ -65,5 +80,13 @@ export function EmbedChat() {
         </div>
       )}
     </div>
+  );
+}
+
+export function EmbedChat({ theme }: { theme: "dark" | "light" }) {
+  return (
+    <Suspense fallback={<div className="h-full" />}>
+      <EmbedChatBody theme={theme} />
+    </Suspense>
   );
 }

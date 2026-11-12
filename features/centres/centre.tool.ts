@@ -1,11 +1,11 @@
 import { createPaginatedTool } from "@/lib/tools/create-paginated-tool";
 
 import { listCourseCentresByAdvanceFilter } from "./centre.api";
-import { courseCentreListSchema, courseCentreRowSchema } from "./schema";
+import { centreListSchema, centreRowSchema } from "./schema";
 
 export const courseCentreListTool = createPaginatedTool({
   description: `
-List and search LMS Centres (course centres).
+List and search LMS Centres.
 
 Use this tool when users ask about:
 - Centre names, codes, or contact details
@@ -14,15 +14,17 @@ Use this tool when users ask about:
 - Finding a centre id before other LMS operations
 - Centre status or admin-related centre metadata
 
+Prefer calling this tool as list-centre. Centre ids are used for create-user and reports.
+
 
   `,
-  querySchema: courseCentreListSchema.query,
-  bodySchema: courseCentreListSchema.body,
-  outputSchema: courseCentreListSchema.output,
+  querySchema: centreListSchema.query,
+  bodySchema: centreListSchema.body,
+  outputSchema: centreListSchema.output,
   widget: {
     entry: "Centre",
     source: "centres",
-    rowSchema: courseCentreRowSchema,
+    rowSchema: centreRowSchema,
   },
   execute: (input, auth) =>
     listCourseCentresByAdvanceFilter(input.query, auth, input.body),

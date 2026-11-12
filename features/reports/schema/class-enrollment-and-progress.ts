@@ -12,13 +12,30 @@ import {
 } from "@/lib/tools/api-pagination";
 import {
   CENTRE_ID_DESCRIBE,
+  FieldAlias,
   PARENT_COURSE_ID_DESCRIBE,
 } from "@/lib/tools/api-wire";
+
+import { centreAlias } from "./aliases";
 
 const centreRefSchema = courseCentreRefSchema;
 
 const classStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
 
+const learnerCountEntrySchema = z.object({
+  totalUsers: z
+    .number()
+    .optional()
+    .describe("Number of learners represented by this entry"),
+  _id: mongoIdSchema.optional().describe("User ID associated with this entry"),
+});
+
+/** Agent path → LMS path. `class` is already the wire display-name key. */
+export const classEnrollmentFields = new FieldAlias({
+  ...centreAlias,
+});
+
+/** Agent-facing row for POST /reports/courses. */
 export const classEnrollmentAndProgressRowSchema = z.object({
   _id: mongoIdSchema
     .optional()
@@ -44,19 +61,9 @@ export const classEnrollmentAndProgressRowSchema = z.object({
     .optional()
     .describe("Total number of learners enrolled in the Class"),
 
-  assignedLearnersCount: z.array(
-    z.object({
-      totalUsers: z
-        .number()
-        .optional()
-        .describe("Number of learners represented by this entry"),
-      _id: mongoIdSchema
-        .optional()
-        .describe("User ID associated with this entry"),
-    }),
-  ),
+  assignedLearnersCount: z.array(learnerCountEntrySchema),
 
-  courseCentre: z
+  centre: z
     .array(centreRefSchema.optional())
     .optional()
     .describe("Centres associated with the Class"),
@@ -66,55 +73,39 @@ export const classEnrollmentAndProgressRowSchema = z.object({
     .optional()
     .describe("Number of learners whose progress status is Yet to Start"),
 
-  activeLearnersCount: z.array(
-    z.object({
-      totalUsers: z
-        .number()
-        .optional()
-        .describe("Number of learners represented by this entry"),
-      _id: mongoIdSchema
-        .optional()
-        .describe("User ID associated with this entry"),
-    }),
-  ),
+  activeLearnersCount: z.array(learnerCountEntrySchema),
 
   inprogressLearners: z
     .number()
     .optional()
     .describe("Number of learners whose progress status is In Progress"),
 
-  inprogressLearnersCount: z
-    .array(
-      z.object({
-        totalUsers: z
-          .number()
-          .optional()
-          .describe("Number of learners represented by this entry"),
-        _id: mongoIdSchema
-          .optional()
-          .describe("User ID associated with this entry"),
-      }),
-    )
-    .optional(),
+  inprogressLearnersCount: z.array(learnerCountEntrySchema).optional(),
 
   completedLearners: z
     .number()
     .optional()
     .describe("Number of learners who have completed the Class"),
 
-  completedLearnersCount: z
-    .array(
-      z.object({
-        totalUsers: z
-          .number()
-          .optional()
-          .describe("Number of learners represented by this entry"),
-        _id: mongoIdSchema
-          .optional()
-          .describe("User ID associated with this entry"),
-      }),
-    )
-    .optional(),
+  completedLearnersCount: z.array(learnerCountEntrySchema).optional(),
+});
+
+/** LMS wire row for POST /reports/courses. */
+export const classEnrollmentAndProgressWireRowSchema = z.object({
+  _id: mongoIdSchema.optional(),
+  creator: mongoIdSchema.optional(),
+  createdAt: ISODateSchema.optional(),
+  status: classStatusSchema.optional(),
+  class: z.string().optional(),
+  assignedLearners: z.number().optional(),
+  assignedLearnersCount: z.array(learnerCountEntrySchema),
+  courseCentre: z.array(centreRefSchema.optional()).optional(),
+  activeLearners: z.number().optional(),
+  activeLearnersCount: z.array(learnerCountEntrySchema),
+  inprogressLearners: z.number().optional(),
+  inprogressLearnersCount: z.array(learnerCountEntrySchema).optional(),
+  completedLearners: z.number().optional(),
+  completedLearnersCount: z.array(learnerCountEntrySchema).optional(),
 });
 
 const ClassEnrollmentAndProgressQuerySchema = withAllowedSort(

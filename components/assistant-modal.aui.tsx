@@ -45,9 +45,16 @@ ModalTriggerButton.displayName = "ModalTriggerButton";
  * without closing this shell.
  * @see https://www.assistant-ui.com/docs/primitives/assistant-modal
  */
-export function AssistantModal({ children }: { children: React.ReactNode }) {
+export function AssistantModal({
+  children,
+  defaultOpen = false,
+}: {
+  children: React.ReactNode;
+  /** Open the panel on mount (e.g. returning from history with a thread). */
+  defaultOpen?: boolean;
+}) {
   return (
-    <AssistantModalPrimitive.Root>
+    <AssistantModalPrimitive.Root defaultOpen={defaultOpen}>
       <AssistantModalPrimitive.Anchor className="fixed right-4 bottom-4 z-50 size-11">
         <AssistantModalPrimitive.Trigger asChild>
           <ModalTriggerButton />
@@ -56,11 +63,13 @@ export function AssistantModal({ children }: { children: React.ReactNode }) {
       <AssistantModalPrimitive.Content
         sideOffset={16}
         className={cn(
-          "bg-background text-foreground z-50 flex h-[min(600px,calc(100dvh-6rem))] w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border shadow-lg outline-none",
+          // Simple rounded chat shell — roomier than the default 400×600 widget.
+          "bg-background text-foreground z-50 flex h-[min(720px,calc(100dvh-5rem))] w-[min(480px,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl border shadow-xl outline-none",
           "data-[state=open]:animate-in data-[state=closed]:animate-out",
           "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
           "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
           "data-[state=closed]:slide-out-to-bottom-2 data-[state=open]:slide-in-from-bottom-2",
+          "motion-reduce:data-[state=open]:animate-none motion-reduce:data-[state=closed]:animate-none",
         )}
       >
         <div className="min-h-0 flex-1">{children}</div>

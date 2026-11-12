@@ -72,8 +72,9 @@ export function SearchInput({
       <FieldGroup>
         <Input
           value={search}
-          placeholder={`Search ${entity.toLowerCase()}`}
-          onChange={(event) => setSearch(event.target.value)}
+          placeholder={`Search ${entity.toLowerCase()}…`}
+          aria-label={`Search ${entity.toLowerCase()}`}
+          onValueChange={setSearch}
         />
         {error ? <FieldDescription>{error}</FieldDescription> : null}
         {loading ? <Skeleton className="h-24 w-full" /> : null}

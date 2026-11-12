@@ -14,11 +14,13 @@ export default defineTool({
 Show matching records in a table.
 
 Call this only when a list tool result sets nextTool to widget_data_table.
-Pass that result's arguments through unchanged. Do not ask the user to select a record unless they asked to.
+You may briefly say you are showing the records, then pass that result's
+arguments through unchanged. Do not ask the user to select a record unless they asked to.
   `,
   inputSchema: widgetDataTableParameters,
   outputSchema: widgetDataTableResult,
   execute: async (args) => args,
+  endsTurn: true,
   label: {
     start: () => "Showing records…",
     complete: () => "Records shown",

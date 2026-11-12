@@ -11,11 +11,13 @@ export default defineTool({
 Show a search input so the user can narrow a large result set.
 
 Call this only when a list tool result sets nextTool to widget_search.
-Pass that result's arguments through unchanged, including selection. Do not list the rows.
+Write one short line that many records matched and ask them to narrow the search,
+then pass that result's arguments through unchanged, including selection. Do not list the rows.
   `,
   inputSchema: widgetSearchParameters,
   outputSchema: widgetSearchResult,
   execute: async (args) => args,
+  endsTurn: true,
   label: {
     start: () => "Showing search…",
     complete: () => "Search shown",

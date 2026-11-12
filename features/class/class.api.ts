@@ -1,9 +1,8 @@
 import type { LmsAuth } from "@/lib/auth";
 import { canViewClasses } from "@/lib/permissions";
 import { lmsFetch } from "@/lib/tools/api-client";
-import { FieldAlias } from "@/lib/tools/api-wire";
 
-import { classListSchema } from "./schema";
+import { classListSchema, classListFields, classWireRowSchema } from "./schema";
 import type { ClassList } from "./class.type";
 
 function warnRole(auth: LmsAuth) {
@@ -20,7 +19,7 @@ export async function listClasses(
   body: ClassList["body"],
 ): Promise<ClassList["output"]> {
   warnRole(auth);
-  const { query: wireQuery, body: wireBody } = new FieldAlias().toWireRequest({
+  const { query: wireQuery, body: wireBody } = classListFields.toWireRequest({
     query: classListSchema.query.parse(query) as Record<string, unknown>,
     body: classListSchema.body.parse(body ?? {}) as Record<string, unknown>,
     idMap: classListSchema.idMap,
@@ -31,5 +30,7 @@ export async function listClasses(
     body: wireBody,
     auth,
   });
-  return classListSchema.output.parse(payload);
+  return classListSchema.output.parse(
+    classListFields.readPage(classWireRowSchema, payload),
+  );
 }

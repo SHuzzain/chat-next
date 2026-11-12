@@ -63,11 +63,27 @@
     });
   }
 
+  var botIcon =
+    '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">' +
+    '<path d="M12 8V4H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<rect x="4" y="8" width="16" height="12" rx="2" stroke="currentColor" stroke-width="2"/>' +
+    '<path d="M2 14h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+    '<path d="M20 14h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+    '<path d="M9 13v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+    '<path d="M15 13v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+    "</svg>";
+
+  var closeIcon =
+    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">' +
+    '<path d="M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+    '<path d="m6 6 12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+    "</svg>";
+
   function setOpen(next) {
     open = next;
     if (iframe) iframe.style.display = open ? "block" : "none";
     if (launcher) {
-      launcher.textContent = open ? "Close" : "Chat";
+      launcher.innerHTML = open ? closeIcon : botIcon;
       launcher.setAttribute(
         "aria-label",
         open ? "Close LMS assistant" : "Open LMS assistant",
@@ -88,22 +104,25 @@
     launcher.id = launcherId;
     launcher.type = "button";
     launcher.setAttribute("aria-label", "Open LMS assistant");
-    launcher.textContent = "Chat";
     launcher.style.cssText = [
       "position:fixed",
       "right:20px",
       "bottom:20px",
       "z-index:2147483646",
-      "height:48px",
-      "padding:0 18px",
+      "width:56px",
+      "height:56px",
+      "padding:0",
       "border:0",
       "border-radius:999px",
       "background:#102B72",
       "color:#fff",
-      "font:600 14px/1 system-ui,sans-serif",
       "cursor:pointer",
       "box-shadow:0 8px 24px rgba(16,43,114,0.28)",
+      "display:inline-flex",
+      "align-items:center",
+      "justify-content:center",
     ].join(";");
+    launcher.innerHTML = botIcon;
 
     iframe = document.createElement("iframe");
     iframe.id = widgetId;
@@ -115,10 +134,11 @@
       "right:20px",
       "bottom:80px",
       "z-index:2147483647",
-      "width:min(400px,calc(100vw - 32px))",
-      "height:min(640px,calc(100vh - 120px))",
+      "width:min(480px,calc(100vw - 32px))",
+      "height:min(720px,calc(100dvh - 5rem))",
       "border:0",
-      "border-radius:16px",
+      "border-radius:24px",
+      "overflow:hidden",
       "box-shadow:0 16px 48px rgba(15,23,42,0.28)",
       "background:#fff",
       "display:none",

@@ -87,6 +87,8 @@ export function createPaginatedTool<
     selection?: ListSelection;
   };
 
+  const entity = config.widget.entry.toLowerCase();
+
   return defineTool({
     description: config.description,
     inputSchema: z.object({
@@ -111,6 +113,10 @@ export function createPaginatedTool<
       selection: z.enum(listSelections),
       view: listModelValueSchema,
     }),
+    label: {
+      start: () => `Searching ${entity}s…`,
+      complete: () => `Found ${entity}s`,
+    },
     execute: async (input, ctx) => {
       const parsed = input as ToolInput;
       const incomingBody: Record<string, unknown> =

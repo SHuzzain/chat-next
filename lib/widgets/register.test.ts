@@ -18,7 +18,10 @@ describe("widget source register", () => {
         "classes",
         "learner-enrollment-report",
         "lesson-overall-report",
+        "live-class-report",
+        "live-class-session-users",
         "user-class-score-report",
+        "user-types",
         "users",
       ].sort(),
     );

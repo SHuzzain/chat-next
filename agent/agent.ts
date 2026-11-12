@@ -4,4 +4,5 @@ import { openai } from "eve/models/openai";
 export default defineAgent({
   model: openai("gpt-6-luna"),
   defaultTools: false,
+  reasoning: "medium",
 });

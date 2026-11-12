@@ -14,6 +14,8 @@ import {
   FieldAlias,
 } from "@/lib/tools/api-wire";
 
+import { centreAlias, classCentreAliases } from "./aliases";
+
 const centreRefSchema = courseCentreRefSchema;
 
 const reportStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
@@ -28,10 +30,7 @@ const reportClassUserStatusSchema = z.enum([
 
 /** Agent path → LMS path. Response names are the reverse of this map. */
 export const enrollFields = new FieldAlias({
-  centre: "courseCentre",
-  "centre.name": "courseCentre.name",
-  "centre._id": "courseCentre._id",
-  "centre.code": "courseCentre.code",
+  ...centreAlias,
   enrolledClassesCount: "assignedCourses",
   completedClassesCount: "completedCourses",
   userRoleTypes: "type",
@@ -69,7 +68,7 @@ export const reportUserEnrollRowSchema = z.looseObject({
     )
     .optional()
     .describe("User role types"),
-  courseCentre: z
+  centre: z
     .array(centreRefSchema)
     .optional()
     .describe("Centres assigned to the user"),
@@ -201,15 +200,7 @@ export const reportUserClassScoreWireRowSchema = z.looseObject({
 
 /** On this endpoint `course` means Class (not parent Course). */
 export const classScoreFields = new FieldAlias({
-  class: "course",
-  "class.name": "course.name",
-  "class.code": "course.code",
-  "class._id": "course._id",
-  centre: "courseCentre",
-  "centre.name": "courseCentre.name",
-  "centre._id": "courseCentre._id",
-  "centre.code": "courseCentre.code",
-  "user.centre": "user.courseCentre",
+  ...classCentreAliases,
 });
 
 const reportUserClassScoreQuerySchema = withAllowedSort(

@@ -4,12 +4,18 @@ import { z } from "zod";
 
 import { FieldAlias } from "./api-wire";
 
+const classCentreAliases = {
+  class: "course",
+  centre: "courseCentre",
+} as const;
+
+const centreAlias = {
+  centre: "courseCentre",
+} as const;
+
 /** Mirrors enrollFields — keep in sync with user-schema.ts */
 const enrollFields = new FieldAlias({
-  centre: "courseCentre",
-  "centre.name": "courseCentre.name",
-  "centre._id": "courseCentre._id",
-  "centre.code": "courseCentre.code",
+  ...centreAlias,
   enrolledClassesCount: "assignedCourses",
   completedClassesCount: "completedCourses",
   userRoleTypes: "type",
@@ -18,34 +24,35 @@ const enrollFields = new FieldAlias({
 
 /** Mirrors classScoreFields — keep in sync with user-schema.ts */
 const classScoreFields = new FieldAlias({
-  class: "course",
-  "class.name": "course.name",
-  "class.code": "course.code",
-  "class._id": "course._id",
-  centre: "courseCentre",
-  "centre.name": "courseCentre.name",
-  "centre._id": "courseCentre._id",
-  "centre.code": "courseCentre.code",
-  "user.centre": "user.courseCentre",
+  ...classCentreAliases,
 });
 
 /** Mirrors classUsersFields — keep in sync with class-users.schema.ts */
 const classUsersFields = new FieldAlias({
-  class: "course",
-  "class.name": "course.name",
-  "class.code": "course.code",
-  "class._id": "course._id",
-  "class.status": "course.status",
-  "class.centre": "course.courseCentre",
+  ...classCentreAliases,
   userCentre: "userCourseCentres",
-  "userCentre.name": "userCourseCentres.name",
-  "userCentre._id": "userCourseCentres._id",
-  "userCentre.code": "userCourseCentres.code",
-  centre: "courseCentre",
-  "centre.name": "courseCentre.name",
-  "centre._id": "courseCentre._id",
-  "centre.code": "courseCentre.code",
-  "user.centre": "user.courseCentre",
+});
+
+/** Mirrors liveClassFields — keep in sync with live-and-physical.ts */
+const liveClassFields = new FieldAlias({
+  ...classCentreAliases,
+  enrolledCount: "total",
+  joinedCount: "totalJoined",
+  notJoinedCount: "totalNotJoined",
+  session: "classLastTime",
+  startAt: "startTime",
+  endAt: "endTime",
+  "session.startAt": "classLastTime.startTime",
+  "session.endAt": "classLastTime.endTime",
+});
+
+/** Mirrors liveSessionUserFields — keep in sync with live-and-physical.ts */
+const liveSessionUserFields = new FieldAlias({
+  ...centreAlias,
+  lesson: "unit",
+  class: "courses",
+  userCentre: "courseusers",
+  eventId: "session",
 });
 
 const enrollRowSchema = z.object({
@@ -265,6 +272,179 @@ describe("FieldAlias.outputSchema", () => {
           centre: [{ name: "East" }],
         },
       },
+    ]);
+  });
+
+  it("renames live-class list wire keys for agent output", () => {
+    const row = z.object({
+      title: z.string().optional(),
+      type: z.string().optional(),
+      course: z.array(z.object({ name: z.string().optional() })).optional(),
+      courseCentre: z
+        .array(z.object({ name: z.string().optional() }))
+        .optional(),
+      event: z.object({ _id: z.string().optional() }).optional(),
+      total: z.number().optional(),
+      totalJoined: z.number().optional(),
+      totalNotJoined: z.number().optional(),
+      classLastTime: z
+        .object({
+          startTime: z.union([z.number(), z.string()]).optional(),
+          endTime: z.union([z.number(), z.string()]).optional(),
+        })
+        .optional(),
+    });
+    const page = liveClassFields.outputSchema(row).parse({
+      data: [
+        {
+          title: "Orientation",
+          type: "LIVESTREAMING",
+          course: [{ name: "Math 101" }],
+          courseCentre: [{ name: "East" }],
+          event: { _id: "evt1" },
+          total: 20,
+          totalJoined: 12,
+          totalNotJoined: 8,
+          classLastTime: { startTime: 1700000000000, endTime: 1700003600000 },
+        },
+      ],
+    });
+
+    assert.deepEqual(page.data, [
+      {
+        title: "Orientation",
+        type: "LIVESTREAMING",
+        class: [{ name: "Math 101" }],
+        centre: [{ name: "East" }],
+        event: { _id: "evt1" },
+        enrolledCount: 20,
+        joinedCount: 12,
+        notJoinedCount: 8,
+        session: { startAt: 1700000000000, endAt: 1700003600000 },
+      },
+    ]);
+  });
+
+  it("maps live-class list centreId and keeps courseId on the wire", () => {
+    assert.deepEqual(
+      liveClassFields.toWireRequest({
+        query: {
+          courseId: "c1",
+          centreId: "ct1",
+          type: "CLASSROOM",
+        },
+      }).query,
+      { courseId: "c1", courseCentre: "ct1", type: "CLASSROOM" },
+    );
+  });
+
+  it("renames live session-user wire keys for agent output", () => {
+    const row = z.object({
+      _id: z.string().optional(),
+      user: z.object({ fullName: z.string().optional() }).optional(),
+      unit: z
+        .object({
+          title: z.string().optional(),
+          type: z.string().optional(),
+          _id: z.string().optional(),
+        })
+        .optional(),
+      courses: z.object({ name: z.string().optional() }).optional(),
+      courseusers: z
+        .array(
+          z.object({
+            courseCentre: z
+              .array(z.object({ name: z.string().optional() }))
+              .optional(),
+          }),
+        )
+        .optional(),
+      gradeStatus: z.string().optional(),
+      session: z.string().optional(),
+      tracking: z
+        .array(
+          z.object({
+            timeJoined: z.string().optional(),
+            timeLeft: z.string().optional(),
+          }),
+        )
+        .optional(),
+    });
+    const page = liveSessionUserFields.outputSchema(row).parse({
+      data: [
+        {
+          _id: "su1",
+          user: { fullName: "Ada Lovelace" },
+          unit: { title: "Orientation", type: "CLASSROOM", _id: "u1" },
+          courses: { name: "Math 101" },
+          courseusers: [{ courseCentre: [{ name: "East" }] }],
+          gradeStatus: "PASSED",
+          session: "evt1",
+          tracking: [
+            {
+              timeJoined: "2024-01-01T10:00:00.000Z",
+              timeLeft: "2024-01-01T11:00:00.000Z",
+            },
+          ],
+        },
+      ],
+    });
+
+    assert.deepEqual(page.data, [
+      {
+        _id: "su1",
+        user: { fullName: "Ada Lovelace" },
+        lesson: { title: "Orientation", type: "CLASSROOM", _id: "u1" },
+        class: { name: "Math 101" },
+        userCentre: [{ centre: [{ name: "East" }] }],
+        gradeStatus: "PASSED",
+        eventId: "evt1",
+        tracking: [
+          {
+            timeJoined: "2024-01-01T10:00:00.000Z",
+            timeLeft: "2024-01-01T11:00:00.000Z",
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("renames class-enrollment centre without renaming class display name", () => {
+    const classEnrollmentFields = new FieldAlias({ ...centreAlias });
+    const row = z.object({
+      class: z.string().optional(),
+      courseCentre: z.array(z.object({ name: z.string() })).optional(),
+    });
+    const page = classEnrollmentFields.outputSchema(row).parse({
+      data: [{ class: "Math 101", courseCentre: [{ name: "East" }] }],
+    });
+    assert.deepEqual(page.data, [
+      { class: "Math 101", centre: [{ name: "East" }] },
+    ]);
+    assert.equal(
+      classEnrollmentFields.toApiField("centre.name"),
+      "courseCentre.name",
+    );
+  });
+
+  it("renames lesson-overall centre only", () => {
+    const lessonOverallFields = new FieldAlias({ ...centreAlias });
+    const row = z.object({
+      class: z.string().optional(),
+      unit: z.string().optional(),
+      courseCentre: z.array(z.object({ name: z.string() })).optional(),
+    });
+    const page = lessonOverallFields.outputSchema(row).parse({
+      data: [
+        {
+          class: "Math 101",
+          unit: "Intro",
+          courseCentre: [{ name: "East" }],
+        },
+      ],
+    });
+    assert.deepEqual(page.data, [
+      { class: "Math 101", unit: "Intro", centre: [{ name: "East" }] },
     ]);
   });
 });

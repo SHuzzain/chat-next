@@ -2,11 +2,13 @@
 
 import { defineToolkit, type ToolCallMessagePartComponent } from "@assistant-ui/react";
 import type { z } from "zod";
+import { ASK_WIDGET_TOOLS } from "@/components/action-log";
 import { FieldDescription } from "@/components/ui/field";
 import { ToolFallback } from "@/components/tool-fallback.aui";
 import { copyToClipboardParameters } from "@/lib/widgets/schema/copy-to-clipboard";
 import { getTimezoneParameters } from "@/lib/widgets/schema/get-timezone";
 import { widgetDataTableParameters } from "@/lib/widgets/schema/widget-data-table";
+import { widgetFormParameters } from "@/lib/widgets/schema/widget-form";
 import { widgetMultiSelectParameters } from "@/lib/widgets/schema/widget-multi-select";
 import { widgetSearchParameters } from "@/lib/widgets/schema/widget-search";
 import { widgetSelectParameters } from "@/lib/widgets/schema/widget-select";
@@ -14,6 +16,7 @@ import { widgetSelectParameters } from "@/lib/widgets/schema/widget-select";
 import { CheckboxWidget } from "./checkbox-widget";
 import { CopyToClipboardUI } from "./copy-to-clipboard";
 import { DataTable } from "./data-table";
+import { FormWidget } from "./form-widget";
 import { GetTimezoneUI } from "./get-timezone";
 import { RadioWidget } from "./radio-widget";
 import { SearchInput } from "./search-input";
@@ -21,6 +24,7 @@ import { asWidgetView, rowsOf } from "./widget-view";
 
 const renderSelect: ToolCallMessagePartComponent = ({ args }) => {
   const parsed = widgetSelectParameters.safeParse(args);
+  // Wait for full args — never fall through to tool-call chrome.
   if (!parsed.success) return null;
   return (
     <RadioWidget
@@ -74,6 +78,19 @@ const renderSearch: ToolCallMessagePartComponent = ({ args }) => {
   );
 };
 
+const renderForm: ToolCallMessagePartComponent = ({ args }) => {
+  const parsed = widgetFormParameters.safeParse(args);
+  if (!parsed.success) return null;
+  return (
+    <FormWidget
+      title={parsed.data.title}
+      description={parsed.data.description}
+      submitLabel={parsed.data.submitLabel}
+      fields={parsed.data.fields}
+    />
+  );
+};
+
 /**
  * Client entry for an Eve-executed widget. `type: "backend"` stays on the
  * object so the browser does not run it; the declared return type omits `type`
@@ -116,6 +133,11 @@ export const eveToolkit = defineToolkit({
     parameters: widgetSearchParameters,
     render: renderSearch,
   }),
+  widget_form: backendWidget({
+    description: "Show a form so the user can enter structured answers.",
+    parameters: widgetFormParameters,
+    render: renderForm,
+  }),
   copy_to_clipboard: {
     type: "frontend",
     description: "Copy text to the user's clipboard.",
@@ -154,6 +176,9 @@ export const EveWidgetFallback: ToolCallMessagePartComponent = (props) => {
       : undefined;
   const Render = entry && "render" in entry ? entry.render : undefined;
   if (Render) return <Render {...props} />;
+
+  // Ask widgets must never show action-log / Used tool chrome.
+  if (ASK_WIDGET_TOOLS.has(props.toolName)) return null;
 
   const view = asWidgetView(props.result);
   if (view.nextTool) return null;

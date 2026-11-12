@@ -51,3 +51,7 @@ next-env.d.ts
 
 # logs
 /logs
+
+#.cursor
+.cursor
+.agents

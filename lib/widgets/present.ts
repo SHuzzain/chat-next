@@ -202,8 +202,10 @@ export function toWidgetAdvanceFilterOutput(output: {
           ...(config.body ? { body: config.body } : {}),
         },
         instruction:
-          "Call widget_data_table now with the given arguments. " +
+          "You may briefly say you are showing the matching records, then call " +
+          "widget_data_table once with the given arguments. " +
           `Display the matching ${config.entity} records. ` +
+          "The table UI paginates itself — do not fetch other list pages. " +
           "Do not ask the user to select a record unless requested.",
       }),
     );
@@ -233,8 +235,8 @@ export function toWidgetAdvanceFilterOutput(output: {
         totalItems: 1,
         record: row ? { ...option, row } : option,
         instruction:
-          `One ${config.entity} matched. Use this record and continue ` +
-          "the user's requested task.",
+          `One ${config.entity} matched. You may briefly say you found it, ` +
+          "then use this record and continue the user's requested task.",
       }),
     );
   }
@@ -253,7 +255,8 @@ export function toWidgetAdvanceFilterOutput(output: {
           nextTool: "widget_select",
           arguments: choiceArgs,
           instruction:
-            "Call widget_select now with the given arguments. " +
+            `Briefly tell the user how many ${config.entity} matched and ask them to verify. ` +
+            "Then call widget_select with the given arguments. " +
             `Wait for the user to choose one ${config.entity}. Do not guess an id.`,
         }),
       );
@@ -263,7 +266,8 @@ export function toWidgetAdvanceFilterOutput(output: {
         nextTool: "widget_multi_select",
         arguments: choiceArgs,
         instruction:
-          "Call widget_multi_select now with the given arguments. " +
+          `Briefly tell the user how many ${config.entity} matched and ask them to verify. ` +
+          "Then call widget_multi_select with the given arguments. " +
           `Wait for the user to choose one or more ${config.entity}. Do not guess ids.`,
       }),
     );
@@ -292,9 +296,9 @@ export function toWidgetAdvanceFilterOutput(output: {
         selection: config.selection,
       },
       instruction:
-        "Call widget_search now with the given arguments. " +
-        `Found ${totalItems} matching ${config.entity} records. ` +
-        "Ask the user to narrow the search in the search input. Do not list the rows.",
+        `Briefly tell the user that ${totalItems} matching ${config.entity} records were found ` +
+        "and ask them to narrow the search. Then call widget_search with the given arguments. " +
+        "Do not list the rows.",
     }),
   );
 }

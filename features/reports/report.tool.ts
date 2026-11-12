@@ -3,6 +3,8 @@ import {
   listClassEnrollmentAndProgressReports,
   listClassUsersReports,
   listLessonOverallReports,
+  listLiveClassReports,
+  listLiveClassSessionUsers,
   listUserClassScoreReports,
   listUserEnrollReports,
 } from "./report.api";
@@ -15,11 +17,15 @@ import {
   reportLessonOverallRowSchema,
   reportClassUsersSchema,
   reportClassUsersRowSchema,
+  reportLiveClassSchema,
+  reportLiveClassRowSchema,
+  reportLiveSessionUserSchema,
+  reportLiveSessionUserRowSchema,
 } from "./schema";
 import {
   classEnrollmentAndProgressRowSchema,
   classEnrollmentAndProgressSchema,
-} from "./schema/class-enrollment-and-progress";
+} from "./schema";
 
 export const userReportListTool = createPaginatedTool({
   description: `
@@ -142,4 +148,57 @@ Requires query.classId (resolve via list-classes first).
   },
   execute: (input, auth) =>
     listClassUsersReports(input.query, auth, input.body),
+});
+
+export const liveClassReportTool = createPaginatedTool({
+  description: `
+Retrieve the Online and Physical Class Reports (live / classroom lessons).
+
+Use this tool when users ask about:
+- Online or physical class lessons
+- How many learners enrolled, joined, or did not join a lesson
+- Lesson type (CLASSROOM, LIVESTREAMING, MSTEAMS_MEETING)
+- Lesson start/end times
+- Which Class or Centre a lesson belongs to
+
+Optional query.classId / centreId / type filters.
+To list who attended a specific lesson, take event._id from a row and call the live-class session-users report.
+  `,
+  querySchema: reportLiveClassSchema.query,
+  bodySchema: reportLiveClassSchema.body,
+  outputSchema: reportLiveClassSchema.output,
+  widget: {
+    entry: "Lesson",
+    source: "live-class-report",
+    rowSchema: reportLiveClassRowSchema,
+  },
+  execute: (input, auth) =>
+    listLiveClassReports(input.query, auth, input.body),
+});
+
+export const liveClassSessionUsersTool = createPaginatedTool({
+  description: `
+Retrieve attendance for one Online/Physical Class lesson session.
+
+Use this tool when users ask about:
+- Who joined or left a live/physical lesson
+- Learner join/leave times for a session
+- Grade status for session attendance
+
+# Resolve query.eventId
+1. Call the Online/Physical Class list report (live-class-report) with purpose resolve.
+2. Pick the lesson row the user means.
+3. Pass that row's event._id as query.eventId here.
+Do not invent an eventId; do not use classId or lesson _id instead.
+  `,
+  querySchema: reportLiveSessionUserSchema.query,
+  bodySchema: reportLiveSessionUserSchema.body,
+  outputSchema: reportLiveSessionUserSchema.output,
+  widget: {
+    entry: "Learner",
+    source: "live-class-session-users",
+    rowSchema: reportLiveSessionUserRowSchema,
+  },
+  execute: (input, auth) =>
+    listLiveClassSessionUsers(input.query, auth, input.body),
 });

@@ -1,16 +1,24 @@
 import type { z } from "zod";
 
 import type {
-  courseCentreListSchema,
-  courseCentreRefSchema,
-  courseCentreRowSchema,
+  centreListSchema,
+  centreRefSchema,
+  centreRowSchema,
 } from "./schema";
 
-export type CourseCentreRow = z.infer<typeof courseCentreRowSchema>;
-export type CourseCentreRef = z.infer<typeof courseCentreRefSchema>;
+export type CentreRow = z.infer<typeof centreRowSchema>;
+export type CentreRef = z.infer<typeof centreRefSchema>;
 
-export type CourseCentreList = {
-  query: z.infer<typeof courseCentreListSchema.query>;
-  body: z.infer<typeof courseCentreListSchema.body>;
-  output: z.infer<typeof courseCentreListSchema.output>;
+/** @deprecated Prefer {@link CentreRow} */
+export type CourseCentreRow = CentreRow;
+/** @deprecated Prefer {@link CentreRef} */
+export type CourseCentreRef = CentreRef;
+
+export type CentreList = {
+  query: z.infer<typeof centreListSchema.query>;
+  body: z.infer<typeof centreListSchema.body>;
+  output: z.infer<typeof centreListSchema.output>;
 };
+
+/** @deprecated Prefer {@link CentreList} */
+export type CourseCentreList = CentreList;

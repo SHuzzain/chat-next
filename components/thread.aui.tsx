@@ -9,19 +9,8 @@ import { File } from "@/components/file";
 import { ThreadFollowupSuggestions } from "@/components/follow-up-suggestions.aui";
 import { Image } from "@/components/image";
 import { MarkdownText } from "@/components/markdown-text";
-import {
-  Reasoning,
-  ReasoningContent,
-  ReasoningRoot,
-  ReasoningText,
-  ReasoningTrigger,
-} from "@/components/reasoning.aui";
+import { ActionLogLine } from "@/components/action-log";
 import { ToolFallback } from "@/components/tool-fallback.aui";
-import {
-  ToolGroupContent,
-  ToolGroupRoot,
-  ToolGroupTrigger,
-} from "@/components/tool-group.aui";
 import { ChatHeader, SavedTranscript, useChatThreads } from "@/components/chat-threads";
 import { TooltipIconButton } from "@/components/tooltip-icon-button";
 import { Button } from "@/components/ui/button";
@@ -74,11 +63,6 @@ import {
 } from "react";
 
 export type ThreadGroupPart = MessagePrimitive.GroupedParts.GroupPart;
-
-const reasoningDuration = (timing: ThreadGroupPart["timing"]) =>
-  timing?.completedAt === undefined
-    ? undefined
-    : Math.round((timing.completedAt - timing.startedAt) / 1000);
 
 /**
  * Optional component overrides for the thread. `AssistantMessage` and
@@ -577,14 +561,11 @@ const AssistantMessage: FC = () => {
                 if (ToolGroup) {
                   return <ToolGroup group={part}>{children}</ToolGroup>;
                 }
+                // Flat action log — no "N tool calls" accordion.
                 return (
-                  <ToolGroupRoot variant="ghost">
-                    <ToolGroupTrigger
-                      count={part.indices.length}
-                      active={part.status.type === "running"}
-                    />
-                    <ToolGroupContent>{children}</ToolGroupContent>
-                  </ToolGroupRoot>
+                  <div data-slot="aui_tool-log" className="flex flex-col gap-0.5 py-0.5">
+                    {children}
+                  </div>
                 );
               case "group-reasoning": {
                 if (ReasoningGroup) {
@@ -592,23 +573,15 @@ const AssistantMessage: FC = () => {
                     <ReasoningGroup group={part}>{children}</ReasoningGroup>
                   );
                 }
-                const running = part.status.type === "running";
-                return (
-                  <ReasoningRoot streaming={running}>
-                    <ReasoningTrigger
-                      active={running}
-                      duration={reasoningDuration(part.timing)}
-                    />
-                    <ReasoningContent aria-busy={running}>
-                      <ReasoningText>{children}</ReasoningText>
-                    </ReasoningContent>
-                  </ReasoningRoot>
-                );
+                // Only show `> thinking` while streaming; no Reasoning section.
+                if (part.status.type !== "running") return null;
+                return <ActionLogLine label="thinking" active />;
               }
               case "text":
                 return <MarkdownText />;
               case "reasoning":
-                return <Reasoning {...part} />;
+                // Raw reasoning body is hidden; the group shows `> thinking`.
+                return null;
               case "tool-call":
                 return part.toolUI ?? <ToolFallbackComponent {...part} />;
               case "data":

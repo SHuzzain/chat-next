@@ -1,12 +1,14 @@
 import type { z } from "zod";
 
 import type {
+  classEnrollmentAndProgressSchema,
+  reportClassUsersSchema,
   reportLessonOverallSchema,
+  reportLiveClassSchema,
+  reportLiveSessionUserSchema,
   reportUserClassScoreSchema,
   reportUserEnrollSchema,
 } from "./schema";
-import { classEnrollmentAndProgressSchema } from "./schema/class-enrollment-and-progress";
-import type { reportClassUsersSchema } from "./schema/class-users.schema";
 
 export type ReportUserEnroll = {
   query: z.infer<typeof reportUserEnrollSchema.query>;
@@ -36,4 +38,16 @@ export type ReportClassUsers = {
   query: z.infer<typeof reportClassUsersSchema.query>;
   body: z.infer<typeof reportClassUsersSchema.body>;
   output: z.infer<typeof reportClassUsersSchema.output>;
+};
+
+export type ReportLiveClass = {
+  query: z.infer<typeof reportLiveClassSchema.query>;
+  body: z.infer<typeof reportLiveClassSchema.body>;
+  output: z.infer<typeof reportLiveClassSchema.output>;
+};
+
+export type ReportLiveSessionUser = {
+  query: z.infer<typeof reportLiveSessionUserSchema.query>;
+  body: z.infer<typeof reportLiveSessionUserSchema.body>;
+  output: z.infer<typeof reportLiveSessionUserSchema.output>;
 };

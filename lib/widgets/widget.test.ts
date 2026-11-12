@@ -125,7 +125,8 @@ describe("toWidgetAdvanceFilterOutput", () => {
       }),
     );
     assert.equal(value.nextTool, "widget_select");
-    assert.match(String(value.instruction), /Call widget_select/);
+    assert.match(String(value.instruction), /call widget_select/i);
+    assert.match(String(value.instruction), /verify/i);
     assert.deepEqual(widgetSelectParameters.parse(value.arguments).options, [
       { id: "a", label: "Ada", detail: "A-1" },
       { id: "b", label: "Ben", detail: "B-1" },
@@ -170,7 +171,8 @@ describe("toWidgetAdvanceFilterOutput", () => {
       }),
     );
     assert.equal(value.nextTool, "widget_data_table");
-    assert.match(String(value.instruction), /Call widget_data_table/);
+    assert.match(String(value.instruction), /call widget_data_table once/i);
+    assert.match(String(value.instruction), /do not fetch other list pages/i);
     const args = widgetDataTableParameters.parse(value.arguments);
     assert.equal(args.totalItems, 13);
     assert.equal(args.currentPage, 1);

@@ -164,8 +164,8 @@ export function DataTable({
       </div>
       <Input
         value={filter}
-        onChange={(event) => setFilter(event.target.value)}
-        placeholder={`Search ${plural(entity, 2)}`}
+        onValueChange={setFilter}
+        placeholder={`Search ${plural(entity, 2)}…`}
         aria-label={`Search ${plural(entity, 2)}`}
       />
       <Table containerClassName="max-h-56 rounded-md border">

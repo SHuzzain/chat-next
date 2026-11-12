@@ -19,6 +19,8 @@ import {
   FieldAlias,
 } from "@/lib/tools/api-wire";
 
+import { classCentreAliases } from "./aliases";
+
 const reportStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
 
 const classUserStatusSchema = z.enum([
@@ -42,21 +44,8 @@ const centreNameRefSchema = z.looseObject({
  * the learner's Centres for the enrollment.
  */
 export const classUsersFields = new FieldAlias({
-  class: "course",
-  "class.name": "course.name",
-  "class.code": "course.code",
-  "class._id": "course._id",
-  "class.status": "course.status",
-  "class.centre": "course.courseCentre",
+  ...classCentreAliases,
   userCentre: "userCourseCentres",
-  "userCentre.name": "userCourseCentres.name",
-  "userCentre._id": "userCourseCentres._id",
-  "userCentre.code": "userCourseCentres.code",
-  centre: "courseCentre",
-  "centre.name": "courseCentre.name",
-  "centre._id": "courseCentre._id",
-  "centre.code": "courseCentre.code",
-  "user.centre": "user.courseCentre",
 });
 
 /** Agent-facing row (filters, select, widget roles, final output). */

@@ -23,10 +23,14 @@ type AssistantChatProps = {
   token: string;
   role?: string;
   /**
-   * `modal` — floating AssistantModal (default).
-   * `fullscreen` — fill parent (embed iframe).
+   * `modal` — floating AssistantModal (LMS host can use this).
+   * `fullscreen` — fill parent (standalone home + embed iframe).
    */
   presentation?: "modal" | "fullscreen";
+  /** Open this conversation on mount (e.g. from `/history?thread=`). */
+  initialThread?: { id: string; title: string };
+  /** Open the floating modal immediately (modal presentation only). */
+  defaultOpen?: boolean;
 };
 
 type OpenThread = {
@@ -107,9 +111,19 @@ function EveChat({
   );
 }
 
-export function AssistantChat({ token, role, presentation = "modal" }: AssistantChatProps) {
-  const [thread, setThread] = useState<OpenThread>({ key: 0 });
-  const [activeId, setActiveId] = useState<string | undefined>();
+export function AssistantChat({
+  token,
+  role,
+  presentation = "modal",
+  initialThread,
+  defaultOpen = false,
+}: AssistantChatProps) {
+  const [thread, setThread] = useState<OpenThread>(() =>
+    initialThread
+      ? { id: initialThread.id, title: initialThread.title, key: 0 }
+      : { key: 0 },
+  );
+  const [activeId, setActiveId] = useState<string | undefined>(initialThread?.id);
   const startThread = useCallback(() => {
     setActiveId(undefined);
     setThread((current) => ({ key: current.key + 1 }));
@@ -143,7 +157,13 @@ export function AssistantChat({ token, role, presentation = "modal" }: Assistant
         openThread,
       }}
     >
-      {presentation === "fullscreen" ? chat : <AssistantModal>{chat}</AssistantModal>}
+      {presentation === "fullscreen" ? (
+        chat
+      ) : (
+        <AssistantModal defaultOpen={defaultOpen || Boolean(initialThread)}>
+          {chat}
+        </AssistantModal>
+      )}
     </ChatThreadProvider>
   );
 }
