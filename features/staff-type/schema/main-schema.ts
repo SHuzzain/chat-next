@@ -2,16 +2,12 @@ import { z } from "zod";
 
 import { mongoIdSchema, populatedRefSchema } from "@/lib/zod/primitives";
 
-export const staffTypeStatusSchema = z.enum([
-  "ACTIVE",
-  "INACTIVE",
-  "DELETED",
-]);
+export const staffTypeStatusSchema = z.enum(["ACTIVE", "INACTIVE", "DELETED"]);
 
 export const staffTypeSchema = z.looseObject({
-  _id: mongoIdSchema,
-  staffType: z.string(),
-  description: z.string().optional(),
+  _id: mongoIdSchema.meta({ ui: { role: "value" } }),
+  staffType: z.string().meta({ ui: { roles: ["label", "search"] } }),
+  description: z.string().optional().meta({ ui: { role: "detail" } }),
   businessType: populatedRefSchema.optional(),
   status: staffTypeStatusSchema.optional(),
   synsStatus: z.string().optional(),

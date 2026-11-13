@@ -2,7 +2,6 @@ const STORAGE_KEY = "lms-agent-embed-session";
 
 export type EmbedSession = {
   token: string;
-  role?: string;
 };
 
 export function saveEmbedSession(session: EmbedSession) {
@@ -23,10 +22,8 @@ export function readEmbedSession(): EmbedSession | undefined {
     if (!parsed || typeof parsed !== "object") return undefined;
     const token = (parsed as { token?: unknown }).token;
     if (typeof token !== "string" || !token.trim()) return undefined;
-    const role = (parsed as { role?: unknown }).role;
     return {
       token: token.trim(),
-      role: typeof role === "string" ? role : undefined,
     };
   } catch {
     return undefined;

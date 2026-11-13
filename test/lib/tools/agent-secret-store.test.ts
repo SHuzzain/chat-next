@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import {
   AgentSecretError,
   createAgentSecretStore,
-} from "./agent-secret-store";
+} from "@/lib/tools/agent-secret-store";
 
 describe("agent secret store", () => {
   it("stores and takes a secret once", () => {

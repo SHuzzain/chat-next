@@ -310,8 +310,10 @@ export function selectionMessage(
 ) {
   const noun =
     options.length === 1 ? entity.toLowerCase() : plural.toLowerCase();
-  const list = options
-    .map((option) => `${option.label} (_id: ${option.id})`)
-    .join(", ");
-  return `Selected ${noun}: ${list}`;
+  const labels = options.map((option) => option.label).join(", ");
+  // Ids stay in the thread for the model; keep them on a quiet follow-up line
+  // so the chat does not read like raw API output ("_id: …").
+  const ids = options.map((option) => option.id).join(", ");
+  const idLine = options.length === 1 ? `id: ${ids}` : `ids: ${ids}`;
+  return `Selected ${noun}: ${labels}\n${idLine}`;
 }

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { runJs } from "./run-js";
+import { runJs } from "@/lib/tools/run-js";
 
 describe("runJs", () => {
   it("returns a computed value from data", () => {

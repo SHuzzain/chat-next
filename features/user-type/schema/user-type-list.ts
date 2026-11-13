@@ -1,14 +1,15 @@
 import { z } from "zod";
 
 import { lmsPageSchema } from "@/lib/tools/api-response";
-import { paginatedQuerySchema } from "@/lib/tools/api-pagination";
-import { lmsListBodySchema } from "@/lib/tools/api-request";
 import { mongoIdSchema } from "@/lib/zod/primitives";
 import { userRoleSchema } from "@/lib/zod/role";
 
 import { authenticationTypeSchema } from "./main-schema";
 
-/** Row from GET /user-types/list (Super Admin already excluded by LMS). */
+/**
+ * Row from GET /user-types/list (Super Admin already excluded by LMS).
+ * Fields match UserTypeService.getUserTypeList projection.
+ */
 export const userTypeListRowSchema = z
   .looseObject({
     _id: mongoIdSchema.meta({ ui: { role: "value" } }),
@@ -21,15 +22,43 @@ export const userTypeListRowSchema = z
   })
   .describe("User type");
 
-const userTypeListQuerySchema = paginatedQuerySchema(
-  userTypeListRowSchema,
-).extend({
-  textSearch: z.string().optional(),
+/**
+ * Query for GET /user-types/list.
+ * Backend accepts only: firstId, lastId, rowPerPage (validator).
+ * textSearch is read by the controller/service (name regex) though not in the
+ * express-validator list — keep it for search.
+ * No page / order / orderBy / advanceFilter — this is not an advance-filter API.
+ */
+export const userTypeListQuerySchema = z.object({
+  rowPerPage: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .optional()
+    .describe("Max rows to return (cursor page size)"),
+  firstId: mongoIdSchema
+    .optional()
+    .describe("Cursor: return types with _id greater than this (newer page)"),
+  lastId: mongoIdSchema
+    .optional()
+    .describe("Cursor: return types with _id less than this (older page)"),
+  textSearch: z
+    .string()
+    .optional()
+    .describe("Search user type name (case-insensitive contains)"),
 });
+
+/** GET has no body — keep an empty object so createPaginatedTool still type-checks. */
+export const userTypeListBodySchema = z
+  .object({})
+  .describe(
+    "Unused. GET /user-types/list has no request body and no advanceFilter.",
+  );
 
 export const userTypeListSchema = {
   query: userTypeListQuerySchema,
-  body: lmsListBodySchema(userTypeListRowSchema),
+  body: userTypeListBodySchema,
   output: lmsPageSchema(userTypeListRowSchema),
 };
 

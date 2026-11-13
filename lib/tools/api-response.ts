@@ -22,21 +22,35 @@ function omitNullProperties(value: unknown): unknown {
  * Rows are `.partial()` because body.advanceFilterSelect is converted on the
  * backend with convertToMongoQueryWithSelect(select, "project") and may return
  * only the selected fields (Mongo still keeps `_id` by default).
+ *
+ * Cast after preprocess: on a generic `T`, Zod's `partial()` + `preprocess`
+ * collapses known fields to `unknown`. `Partial<z.infer<T>>` keeps real types.
  */
 export const lmsPageSchema = <T extends z.ZodObject<z.ZodRawShape>>(
   rowSchema: T,
-) =>
-  z.object({
-    data: z.array(z.preprocess(omitNullProperties, rowSchema.partial())),
+) => {
+  type PartialRow = Partial<z.infer<T>>;
+  return z.object({
+    data: z.array(
+      z.preprocess(
+        omitNullProperties,
+        rowSchema.partial(),
+      ) as unknown as z.ZodType<PartialRow>,
+    ),
     currentPage: z.number().nullable().optional(),
     totalPage: z.number().optional(),
     totalItems: z.number().optional(),
     userGridColumn: z.record(z.string(), z.unknown()).nullable().optional(),
   });
+};
 
-export type LMSPage<T extends z.ZodObject<z.ZodRawShape>> = z.infer<
-  ReturnType<typeof lmsPageSchema<T>>
->;
+export type LMSPage<T extends z.ZodObject<z.ZodRawShape>> = {
+  data: Array<Partial<z.infer<T>>>;
+  currentPage?: number | null;
+  totalPage?: number;
+  totalItems?: number;
+  userGridColumn?: Record<string, unknown> | null;
+};
 
 /** Alias of {@link lmsPageSchema} for LMS paginated list payloads. */
 export const paginationResponseSchema = lmsPageSchema;

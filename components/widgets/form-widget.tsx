@@ -36,8 +36,13 @@ import {
 
 type FormWidgetProps = WidgetFormArgs;
 
-function initialValues(fields: WidgetFormField[]): WidgetFormValues {
-  const values: WidgetFormValues = {};
+type LocalFormValues = Record<
+  string,
+  WidgetFormValues[string] | File | undefined
+>;
+
+function initialValues(fields: WidgetFormField[]): LocalFormValues {
+  const values: LocalFormValues = {};
   for (const field of fields) {
     if (field.defaultValue !== undefined) {
       values[field.name] = field.defaultValue;
@@ -46,6 +51,7 @@ function initialValues(fields: WidgetFormField[]): WidgetFormValues {
     if (field.type === "checkbox") values[field.name] = false;
     else if (field.type === "checkbox_group") values[field.name] = [];
     else if (field.type === "number") values[field.name] = undefined;
+    else if (field.type === "file") values[field.name] = undefined;
     else values[field.name] = "";
   }
   return values;
@@ -67,25 +73,10 @@ function fieldHint(field: WidgetFormField): string | undefined {
   return parts.length > 0 ? parts.join(" · ") : undefined;
 }
 
-async function storeSensitiveSecrets(
-  values: WidgetFormValues,
-  fields: WidgetFormField[],
+async function putSecrets(
+  secrets: Record<string, string>,
   session: { token: string; role?: string },
-): Promise<{ publicValues: WidgetFormValues; passwordSecretId?: string }> {
-  const secrets: Record<string, string> = {};
-  for (const field of fields) {
-    if (field.type !== "password" && !isSensitiveFormKey(field.name)) continue;
-    const raw = values[field.name];
-    if (typeof raw === "string" && raw.length > 0) {
-      secrets[field.name] = raw;
-    }
-  }
-
-  const publicValues: WidgetFormValues = { ...values };
-  if (Object.keys(secrets).length === 0) {
-    return { publicValues };
-  }
-
+): Promise<string> {
   const response = await fetch("/api/agent/secrets", {
     method: "POST",
     headers: {
@@ -102,12 +93,80 @@ async function storeSensitiveSecrets(
   if (!response.ok || !payload?.secretId) {
     throw new Error(payload?.message || "Unable to store credentials securely.");
   }
+  return payload.secretId;
+}
 
-  for (const key of Object.keys(secrets)) {
-    publicValues[key] = "[set]";
+async function fileToBase64(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
   }
-  publicValues.passwordSecretId = payload.secretId;
-  return { publicValues, passwordSecretId: payload.secretId };
+  return btoa(binary);
+}
+
+async function storeSensitiveSecrets(
+  values: LocalFormValues,
+  fields: WidgetFormField[],
+  session: { token: string; role?: string },
+): Promise<{ publicValues: WidgetFormValues; passwordSecretId?: string }> {
+  const passwordSecrets: Record<string, string> = {};
+  for (const field of fields) {
+    if (field.type !== "password" && !isSensitiveFormKey(field.name)) continue;
+    const raw = values[field.name];
+    if (typeof raw === "string" && raw.length > 0) {
+      passwordSecrets[field.name] = raw;
+    }
+  }
+
+  const publicValues: WidgetFormValues = {};
+  for (const [key, value] of Object.entries(values)) {
+    if (value instanceof File) {
+      publicValues[key] = value.name;
+      continue;
+    }
+    publicValues[key] = value;
+  }
+
+  if (Object.keys(passwordSecrets).length > 0) {
+    const passwordSecretId = await putSecrets(passwordSecrets, session);
+    for (const key of Object.keys(passwordSecrets)) {
+      publicValues[key] = "[set]";
+    }
+    publicValues.passwordSecretId = passwordSecretId;
+  }
+
+  for (const field of fields) {
+    if (field.type !== "file") continue;
+    const raw = values[field.name];
+    if (!(raw instanceof File)) continue;
+    if (field.maxBytes !== undefined && raw.size > field.maxBytes) {
+      throw new Error(
+        `${field.label}: file must be ${Math.ceil(field.maxBytes / (1024 * 1024))}MB or smaller.`,
+      );
+    }
+    const base64 = await fileToBase64(raw);
+    const secretId = await putSecrets(
+      {
+        [`${field.name}Base64`]: base64,
+        [`${field.name}Filename`]: raw.name,
+        [`${field.name}MediaType`]: raw.type || "application/octet-stream",
+      },
+      session,
+    );
+    publicValues[field.name] = raw.name;
+    publicValues[`${field.name}SecretId`] = secretId;
+  }
+
+  return {
+    publicValues,
+    passwordSecretId:
+      typeof publicValues.passwordSecretId === "string"
+        ? publicValues.passwordSecretId
+        : undefined,
+  };
 }
 
 export function FormWidget({
@@ -119,7 +178,7 @@ export function FormWidget({
   const aui = useAui();
   const session = useLmsSession();
   const formId = useId();
-  const [values, setValues] = useState<WidgetFormValues>(() =>
+  const [values, setValues] = useState<LocalFormValues>(() =>
     initialValues(fields),
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -131,7 +190,7 @@ export function FormWidget({
     [fields],
   );
 
-  function setValue(name: string, value: WidgetFormValues[string]) {
+  function setValue(name: string, value: LocalFormValues[string]) {
     setValues((current) => ({ ...current, [name]: value }));
     setErrors((current) => {
       if (!current[name]) return current;
@@ -144,7 +203,9 @@ export function FormWidget({
   function validate(): boolean {
     const next: Record<string, string> = {};
     for (const name of requiredNames) {
-      if (isEmpty(values[name])) {
+      const value = values[name];
+      if (value instanceof File) continue;
+      if (isEmpty(value)) {
         next[name] = "This field is required";
       }
     }
@@ -216,17 +277,46 @@ function FormFieldControl({
 }: {
   formId: string;
   field: WidgetFormField;
-  value: WidgetFormValues[string];
+  value: LocalFormValues[string];
   error?: string;
   disabled: boolean;
-  onChange: (value: WidgetFormValues[string]) => void;
+  onChange: (value: LocalFormValues[string]) => void;
 }) {
   const controlId = `${formId}-${field.name}`;
   const invalid = Boolean(error);
   const hint = fieldHint(field);
+  const baseLabel = field.label.replace(/\s*\(optional\)\s*$/i, "").trim();
   const labelText = field.required
-    ? field.label
-    : `${field.label} (optional)`;
+    ? baseLabel
+    : `${baseLabel} (optional)`;
+
+  if (field.type === "file") {
+    const file = value instanceof File ? value : undefined;
+    return (
+      <Field data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
+        <FieldLabel htmlFor={controlId}>{labelText}</FieldLabel>
+        <input
+          id={controlId}
+          type="file"
+          accept={field.accept}
+          disabled={disabled}
+          aria-invalid={invalid || undefined}
+          className="border-input bg-transparent file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex h-8 w-full min-w-0 rounded-lg border px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-3 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+          onChange={(event) => {
+            const next = event.target.files?.[0];
+            onChange(next);
+          }}
+        />
+        {file ? (
+          <FieldDescription>
+            Selected: {file.name} ({Math.ceil(file.size / 1024)} KB)
+          </FieldDescription>
+        ) : null}
+        {hint ? <FieldDescription>{hint}</FieldDescription> : null}
+        {error ? <FieldError>{error}</FieldError> : null}
+      </Field>
+    );
+  }
 
   if (field.type === "checkbox") {
     return (

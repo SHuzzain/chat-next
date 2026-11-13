@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { friendlyToolLabel } from "./action-log-label";
+import { friendlyToolLabel } from "@/lib/action-log-label";
 
 describe("friendlyToolLabel", () => {
   it("strips folder prefix and maps list-/get- tools", () => {

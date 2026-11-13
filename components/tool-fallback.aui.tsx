@@ -1148,6 +1148,23 @@ function ToolFallbackApprovalImpl({
   );
 }
 
+function isAskQuestionTool(toolName: string): boolean {
+  return (
+    toolName === "ask_question" ||
+    toolName.endsWith("/ask_question") ||
+    toolName.endsWith("-ask_question")
+  );
+}
+
+function askQuestionAnswerLabel(result: unknown): string | undefined {
+  if (!result || typeof result !== "object") return undefined;
+  const record = result as Record<string, unknown>;
+  if (typeof record.answer === "string" && record.answer.trim()) {
+    return record.answer.trim();
+  }
+  return undefined;
+}
+
 const ToolFallbackImpl: ToolCallMessagePartComponent = ({
   toolName,
   argsText,
@@ -1179,6 +1196,39 @@ const ToolFallbackImpl: ToolCallMessagePartComponent = ({
   const isRunning = status?.type === "running";
   const shouldRenderApproval =
     isRequiresAction && offersInterruptAction(status, approval, interrupt);
+  const questionUi =
+    isAskQuestionTool(toolName) || isQuestion(approval);
+
+  // Confirmation questions: show only the human controls / receipt — never the
+  // raw tool args JSON or Result dump that confuses end users.
+  if (questionUi) {
+    if (shouldRenderApproval || isSettled(approval)) {
+      return (
+        <div className="my-2 flex flex-col gap-2">
+          <ToolFallbackError status={status} />
+          <ToolFallbackApproval
+            addResult={addResult}
+            resume={resume}
+            interrupt={interrupt}
+            approval={approval}
+            respondToApproval={respondToApproval}
+            status={status}
+          />
+        </div>
+      );
+    }
+    if (isRunning) return null;
+    if (result !== undefined) {
+      const answer = askQuestionAnswerLabel(result);
+      return (
+        <div className="text-muted-foreground my-1 flex items-center gap-1.5 text-sm">
+          <CheckIcon className="size-3.5 shrink-0" aria-hidden="true" />
+          <span>{answer ? `Answered: ${answer}` : "Answered"}</span>
+        </div>
+      );
+    }
+    return null;
+  }
 
   const label = isCancelled
     ? `${friendlyToolLabel(toolName)} (cancelled)`

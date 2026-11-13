@@ -7,7 +7,7 @@
     "dev": "next dev -p 3606",
     "build": "next build",
     "start": "next start",
-    "test": "node --experimental-strip-types --experimental-transform-types --import ./lib/tools/register-test-loader.mjs --test lib/tools/api-contract.test.ts lib/tools/api-wire.test.ts lib/tools/api-request.select.test.ts lib/tools/run-js.test.ts lib/tools/agent-secret-store.test.ts lib/widgets/widget.test.ts lib/widgets/register.test.ts lib/action-log-label.test.ts lib/widgets/schema/widget-form.test.ts features/user/country-dial.test.ts features/user/schema/user-create.test.ts features/user/user.create.test.ts",
+    "test": "node --experimental-strip-types --experimental-transform-types --import ./lib/tools/register-test-loader.mjs --test \"test/**/*.test.ts\" \"features/**/*.test.ts\"",
     "lint": "oxlint && oxfmt --check",
     "lint:fix": "oxlint --fix && oxfmt",
     "format": "oxfmt --check",

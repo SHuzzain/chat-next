@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import {
   dialCodeForCountryName,
   resolveCountryDialFromCentres,
-} from "./country-dial";
+} from "@/features/user/lib/country-dial";
 
 describe("dialCodeForCountryName", () => {
   it("maps known country names", () => {

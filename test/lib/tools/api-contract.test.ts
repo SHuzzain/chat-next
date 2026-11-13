@@ -2,14 +2,14 @@ import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { z } from "zod";
 
-import { paginatedToolInputSchema } from "./api-request";
-import { lmsFetch } from "./api-client";
+import { paginatedToolInputSchema } from "@/lib/tools/api-request";
+import { lmsFetch } from "@/lib/tools/api-client";
 import {
   createLmsCredentialStore,
   LmsCredentialError,
   lmsCredentials,
-} from "./api-credential-store";
-import { lmsPageSchema } from "./api-response";
+} from "@/lib/tools/api-credential-store";
+import { lmsPageSchema } from "@/lib/tools/api-response";
 
 const rowSchema = z.object({
   fullName: z.string(),

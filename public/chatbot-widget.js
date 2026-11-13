@@ -51,7 +51,6 @@
     postToFrame({
       type: "lms-init",
       token: token,
-      role: next.role || "",
       theme: themeOf(next),
     });
   }

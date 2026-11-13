@@ -7,9 +7,13 @@ export const userTypeListTool = createPaginatedTool({
   description: `
 List LMS user types (roles) for assigning when creating a user.
 
+GET /user-types/list query only: rowPerPage, textSearch, firstId, lastId.
+Do not send advanceFilter, page, order, or a body — this is not an
+advance-filter endpoint.
+
 Use purpose "resolve" and selection "single", then follow nextTool to
-widget_select. Never invent type ids. Super Admin types are excluded —
-do not offer or create Super Admin users.
+widget_select. Prefer textSearch to narrow by name. Never invent type ids.
+Super Admin types are excluded — do not offer or create Super Admin users.
   `,
   querySchema: userTypeListSchema.query,
   bodySchema: userTypeListSchema.body,

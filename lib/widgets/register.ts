@@ -42,6 +42,11 @@ import {
   userTypeListRowSchema,
   userTypeListSchema,
 } from "@/features/user-type/schema/user-type-list";
+import { listStaffTypes } from "@/features/staff-type/staff-type.api";
+import {
+  staffTypeListRowSchema,
+  staffTypeListSchema,
+} from "@/features/staff-type/schema/staff-type-list";
 import type { LmsAuth } from "@/lib/auth";
 
 export type WidgetListPage = {
@@ -97,6 +102,12 @@ export const widgetSources = {
     query: userTypeListSchema.query,
     body: userTypeListSchema.body,
     rowSchema: userTypeListRowSchema,
+  },
+  "staff-types": {
+    list: asList(listStaffTypes),
+    query: staffTypeListSchema.query,
+    body: staffTypeListSchema.body,
+    rowSchema: staffTypeListRowSchema,
   },
   "learner-enrollment-report": {
     list: asList(listUserEnrollReports),

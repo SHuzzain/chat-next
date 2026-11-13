@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 
 import { userInfoRowSchema } from "@/features/user/schema/user-info";
 
-import { defaultSelectPaths, mergeDisplaySelect } from "./api-request";
+import { defaultSelectPaths, mergeDisplaySelect } from "@/lib/tools/api-request";
 
 describe("mergeDisplaySelect", () => {
   it("always keeps widget display fields when the agent adds question fields", () => {

@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   experimental: {
     agentUpgrade: "security",
   },
+  basePath: "/lms-dev",
   transpilePackages: ["@assistant-ui/eve", "@assistant-ui/react"],
   async headers() {
     return [

@@ -10,6 +10,8 @@ const OVERRIDES: Record<string, string> = {
   "centres-list-course-centres": "searching centres",
   "list-user-types": "searching user types",
   "user-types-list-user-types": "searching user types",
+  "list-staff-types": "searching staff types",
+  "staff-types-list-staff-types": "searching staff types",
   "create-user": "creating user",
   "users-create-user": "creating user",
   "lesson-overall-reprot": "loading lesson report",

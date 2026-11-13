@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import {
   formSubmissionMessage,
   widgetFormParameters,
-} from "./widget-form";
+} from "@/lib/widgets/schema/widget-form";
 
 describe("widgetFormParameters", () => {
   it("accepts a valid multi-field form", () => {
@@ -84,7 +84,7 @@ describe("widgetFormParameters", () => {
 });
 
 describe("formSubmissionMessage", () => {
-  it("formats a readable summary and JSON block", () => {
+  it("formats a readable summary without a JSON dump", () => {
     const message = formSubmissionMessage("Report filters", {
       status: "ACTIVE",
       tags: ["a", "b"],
@@ -94,20 +94,21 @@ describe("formSubmissionMessage", () => {
     assert.match(message, /- status: ACTIVE/);
     assert.match(message, /- tags: a, b/);
     assert.match(message, /- includeArchived: false/);
-    assert.match(message, /```json/);
-    assert.match(message, /"status": "ACTIVE"/);
+    assert.doesNotMatch(message, /```json/);
   });
 
-  it("redacts password fields in the message", () => {
+  it("redacts password fields and keeps secret ids off the field list", () => {
     const message = formSubmissionMessage("Credentials", {
       email: "ada@example.com",
       password: "Complex1!",
       passwordSecretId: "opaque-id",
     });
     assert.match(message, /- password: \[set\]/);
-    assert.match(message, /"password": "\[set\]"/);
+    assert.match(message, /- email: ada@example.com/);
     assert.doesNotMatch(message, /Complex1!/);
-    assert.match(message, /passwordSecretId/);
+    assert.doesNotMatch(message, /- passwordSecretId/);
+    assert.match(message, /^passwordSecretId: opaque-id$/m);
+    assert.doesNotMatch(message, /```json/);
   });
 
   it("accepts password field type", () => {
@@ -119,5 +120,30 @@ describe("formSubmissionMessage", () => {
       ],
     });
     assert.equal(parsed.fields[1]?.type, "password");
+  });
+
+  it("accepts optional file field and keeps avatarSecretId", () => {
+    const parsed = widgetFormParameters.parse({
+      title: "Profile photo",
+      fields: [
+        {
+          name: "avatar",
+          type: "file",
+          label: "Profile photo",
+          description: "Optional jpg/png up to 5MB",
+        },
+      ],
+    });
+    assert.equal(parsed.fields[0]?.type, "file");
+
+    const message = formSubmissionMessage("Profile photo", {
+      avatar: "ada.png",
+      avatarSecretId: "opaque-avatar-id",
+      avatarBase64: "SHOULD_NOT_LEAK",
+    });
+    assert.match(message, /avatarSecretId/);
+    assert.match(message, /opaque-avatar-id/);
+    assert.match(message, /- avatar: ada\.png/);
+    assert.doesNotMatch(message, /SHOULD_NOT_LEAK/);
   });
 });

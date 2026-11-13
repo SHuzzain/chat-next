@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { z } from "zod";
 
-import { FieldAlias } from "./api-wire";
+import { FieldAlias } from "@/lib/tools/api-wire";
 
 const classCentreAliases = {
   class: "course",

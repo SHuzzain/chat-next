@@ -1,14 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { createAgentSecretStore } from "@/lib/tools/agent-secret-store";
-
 import {
   buildUserCreateFormData,
   toUserCreateWireData,
   userCreateInputSchema,
   userCreateResultSchema,
-} from "./schema/user-create";
+} from "@/features/user/schema/user-create";
+import { createAgentSecretStore } from "@/lib/tools/agent-secret-store";
 
 describe("create-user secret consumption path", () => {
   it("builds FormData from taken secret without exposing password in result schema", () => {

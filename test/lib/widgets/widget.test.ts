@@ -6,12 +6,12 @@ import { classRowSchema } from "@/features/class/schema/class-list";
 import { reportUserClassScoreRowSchema } from "@/features/reports/schema/user-schema";
 import { userInfoRowSchema } from "@/features/user/schema/user-info";
 
-import { selectionMessage, toWidgetAdvanceFilterOutput } from "./present";
-import { fieldWithRole, tableColumns } from "./roles";
-import { widgetDataTableParameters } from "./schema/widget-data-table";
-import { widgetMultiSelectParameters } from "./schema/widget-multi-select";
-import { widgetSearchParameters } from "./schema/widget-search";
-import { widgetSelectParameters } from "./schema/widget-select";
+import { selectionMessage, toWidgetAdvanceFilterOutput } from "@/lib/widgets/present";
+import { fieldWithRole, tableColumns } from "@/lib/widgets/roles";
+import { widgetDataTableParameters } from "@/lib/widgets/schema/widget-data-table";
+import { widgetMultiSelectParameters } from "@/lib/widgets/schema/widget-multi-select";
+import { widgetSearchParameters } from "@/lib/widgets/schema/widget-search";
+import { widgetSelectParameters } from "@/lib/widgets/schema/widget-select";
 
 const rowSchema = z.object({
   _id: z.string().meta({ ui: { role: "value" } }),
@@ -258,17 +258,17 @@ describe("toWidgetAdvanceFilterOutput", () => {
 });
 
 describe("selectionMessage", () => {
-  it("names the selected record and its id", () => {
+  it("names the selected record and keeps the id on a quiet follow-up line", () => {
     assert.equal(
       selectionMessage("Class", "Classes", [{ id: "abc", label: "Rubric" }]),
-      "Selected class: Rubric (_id: abc)",
+      "Selected class: Rubric\nid: abc",
     );
     assert.equal(
       selectionMessage("Learner", "Learners", [
         { id: "a", label: "Ann" },
         { id: "b", label: "Ben" },
       ]),
-      "Selected learners: Ann (_id: a), Ben (_id: b)",
+      "Selected learners: Ann, Ben\nids: a, b",
     );
   });
 });

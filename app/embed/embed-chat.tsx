@@ -7,7 +7,6 @@ import { Suspense, useEffect, useState } from "react";
 
 type LmsSession = {
   token: string;
-  role?: string;
 };
 
 function parentInit(event: MessageEvent): LmsSession | undefined {
@@ -17,7 +16,6 @@ function parentInit(event: MessageEvent): LmsSession | undefined {
   if (typeof data.token !== "string" || !data.token.trim()) return;
   return {
     token: data.token.trim(),
-    role: typeof data.role === "string" ? data.role : undefined,
   };
 }
 
@@ -47,7 +45,7 @@ function EmbedChatBody({ theme }: { theme: "dark" | "light" }) {
       if (!next) return;
       const token = trimToken(next.token);
       if (!token) return;
-      const saved = { token, role: next.role };
+      const saved = { token };
       saveEmbedSession(saved);
       setSession(saved);
     };
@@ -70,7 +68,6 @@ function EmbedChatBody({ theme }: { theme: "dark" | "light" }) {
         <AssistantChat
           key={`${session.token}:${initialThread?.id ?? "new"}`}
           token={session.token}
-          role={session.role}
           presentation="fullscreen"
           initialThread={initialThread}
         />

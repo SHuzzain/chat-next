@@ -16,12 +16,22 @@ export const userCreateInputSchema = z.object({
   lastName: z.string().max(50).optional(),
   salutation: userSalutationSchema,
   typeId: mongoIdSchema.describe("User type id from list-user-types"),
+  staffTypeId: mongoIdSchema
+    .optional()
+    .describe("Staff type id from list-staff-types (optional)"),
   email: z.email().max(150),
   passwordSecretId: z
     .string()
     .min(1)
     .describe(
       "Opaque id from the credentials widget_form submit (passwordSecretId). Never pass the raw password.",
+    ),
+  avatarSecretId: z
+    .string()
+    .min(1)
+    .optional()
+    .describe(
+      "Optional opaque id from a widget_form file field named avatar (avatarSecretId). Never pass raw image bytes.",
     ),
   mobile: z
     .string()
@@ -40,6 +50,13 @@ export const userCreateInputSchema = z.object({
 
 export type UserCreateInput = z.infer<typeof userCreateInputSchema>;
 
+/** Map signed-in LMS role (from session ctx) to registrationBy wire value. */
+export function registrationByFromRole(role?: string): string {
+  const trimmed = role?.trim();
+  if (!trimmed) return "ADMIN";
+  return trimmed;
+}
+
 /** Wire JSON for multipart `data` field (no passwordSecretId). */
 export type UserCreateWireData = {
   email: string;
@@ -55,13 +72,15 @@ export type UserCreateWireData = {
   countryCode?: string;
   mobile?: string;
   Mobilephoneno?: string;
-  registrationBy: "ADMIN";
+  staffType?: string;
+  registrationBy: string;
 };
 
 export function toUserCreateWireData(
   input: UserCreateInput,
   password: string,
   languageId: string,
+  registrationBy: string = "ADMIN",
 ): UserCreateWireData {
   const status = input.status ?? "ACTIVE";
   const localMobile = input.mobile?.trim() || undefined;
@@ -83,16 +102,41 @@ export function toUserCreateWireData(
     ...(countryCode ? { countryCode } : {}),
     ...(mobile ? { mobile } : {}),
     ...(localMobile ? { Mobilephoneno: localMobile } : {}),
-    registrationBy: "ADMIN",
+    ...(input.staffTypeId ? { staffType: input.staffTypeId } : {}),
+    registrationBy,
   };
 }
 
-/** Build multipart FormData for POST /users (no avatar in v1). */
-export function buildUserCreateFormData(wire: UserCreateWireData): FormData {
+/** Build multipart FormData for POST /users. Optional avatar → `user-avatar`. */
+export function buildUserCreateFormData(
+  wire: UserCreateWireData,
+  avatar?: File | Blob | null,
+): FormData {
   const form = new FormData();
   form.append("data", JSON.stringify(wire));
+  if (avatar) {
+    const filename =
+      avatar instanceof File && avatar.name
+        ? avatar.name
+        : "avatar.png";
+    form.append("user-avatar", avatar, filename);
+  }
   return form;
 }
+
+/** Progress + final result shape for streamed create-user yields. */
+export const userCreateProgressSchema = z.looseObject({
+  phase: z.string(),
+  _id: mongoIdSchema.optional(),
+  email: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  salutation: z.string().optional(),
+  status: z.string().optional(),
+  fullName: z.string().optional(),
+});
+
+export type UserCreateProgress = z.infer<typeof userCreateProgressSchema>;
 
 export const userCreateResultSchema = z.looseObject({
   _id: mongoIdSchema,

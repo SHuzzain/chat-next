@@ -28,7 +28,6 @@ function EmbedHistoryBody() {
       if (typeof data.token !== "string" || !data.token.trim()) return;
       const next = {
         token: data.token.trim(),
-        role: typeof data.role === "string" ? data.role : undefined,
       };
       saveEmbedSession(next);
       setSession(next);
@@ -49,7 +48,6 @@ function EmbedHistoryBody() {
   return (
     <ThreadsHistoryPage
       token={session.token}
-      role={session.role}
       chatHref="/embed"
       activeId={activeId}
     />

@@ -6,6 +6,7 @@ export const widgetFormFieldTypes = [
   "number",
   "email",
   "password",
+  "file",
   "select",
   "radio",
   "checkbox",
@@ -13,9 +14,15 @@ export const widgetFormFieldTypes = [
 ] as const;
 
 const SENSITIVE_KEY = /password/i;
+/** Raw file payload keys — never echo into chat. Opaque *SecretId stays visible. */
+const FILE_BYTE_KEY = /(Base64|MediaType)$/i;
 
 export function isSensitiveFormKey(key: string): boolean {
   return SENSITIVE_KEY.test(key);
+}
+
+export function isFileByteFormKey(key: string): boolean {
+  return FILE_BYTE_KEY.test(key);
 }
 
 export type WidgetFormFieldType = (typeof widgetFormFieldTypes)[number];
@@ -51,6 +58,18 @@ const fieldBaseSchema = z.object({
     .boolean()
     .optional()
     .describe("When true, the user must fill this field before submit"),
+  accept: z
+    .string()
+    .optional()
+    .describe(
+      'HTML accept for type "file", e.g. ".jpg,.png,image/jpeg". Optional.',
+    ),
+  maxBytes: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe('Max file size in bytes for type "file". Optional.'),
 });
 
 const optionsFieldTypes = z.enum(["select", "radio", "checkbox_group"]);
@@ -121,13 +140,29 @@ export function redactFormValues(
 ): WidgetFormValues {
   const next: WidgetFormValues = {};
   for (const [key, value] of Object.entries(values)) {
-    next[key] = isSensitiveFormKey(key)
-      ? value === undefined || value === ""
-        ? "(empty)"
-        : "[set]"
-      : value;
+    // Opaque ids must remain so follow-up tools (create-user) can consume them.
+    if (
+      key.endsWith("SecretId") &&
+      typeof value === "string" &&
+      value.length > 0
+    ) {
+      next[key] = value;
+      continue;
+    }
+    if (isSensitiveFormKey(key) || isFileByteFormKey(key)) {
+      next[key] =
+        value === undefined || value === "" ? "(empty)" : "[set]";
+      continue;
+    }
+    next[key] = value;
   }
   return next;
+}
+
+function renderFormValue(value: WidgetFormValues[string]): string {
+  if (Array.isArray(value)) return value.join(", ");
+  if (value === undefined || value === "") return "(empty)";
+  return String(value);
 }
 
 /** Build the user message after the form is submitted. Always redacts passwords. */
@@ -136,20 +171,22 @@ export function formSubmissionMessage(
   values: WidgetFormValues,
 ): string {
   const safe = redactFormValues(values);
-  const lines = Object.entries(safe).map(([key, value]) => {
-    const rendered = Array.isArray(value)
-      ? value.join(", ")
-      : value === undefined || value === ""
-        ? "(empty)"
-        : String(value);
-    return `- ${key}: ${rendered}`;
-  });
+  const fieldLines: string[] = [];
+  const agentLines: string[] = [];
+  for (const [key, value] of Object.entries(safe)) {
+    // Opaque secret ids must remain for follow-up tools, but keep them off the
+    // human field list so the chat does not dump API plumbing.
+    if (key.endsWith("SecretId")) {
+      if (typeof value === "string" && value.length > 0) {
+        agentLines.push(`${key}: ${value}`);
+      }
+      continue;
+    }
+    fieldLines.push(`- ${key}: ${renderFormValue(value)}`);
+  }
   return [
     `Submitted form "${title}":`,
-    ...lines,
-    "",
-    "```json",
-    JSON.stringify(safe, null, 2),
-    "```",
+    ...fieldLines,
+    ...(agentLines.length > 0 ? ["", ...agentLines] : []),
   ].join("\n");
 }

@@ -46,20 +46,36 @@ export async function listUsers(
   );
 }
 
-export async function createUser(
-  input: UserCreateInput,
-  password: string,
-  languageId: string,
-  auth: LmsAuth,
-): Promise<UserCreateResult> {
+export type CreateUserParams = {
+  input: UserCreateInput;
+  password: string;
+  languageId: string;
+  auth: LmsAuth;
+  registrationBy?: string;
+  avatar?: File | null;
+};
+
+export async function createUser({
+  input,
+  password,
+  languageId,
+  auth,
+  registrationBy,
+  avatar,
+}: CreateUserParams): Promise<UserCreateResult> {
   if (!canCreateUsers(auth)) {
     console.warn(
       "user create access is outside the advisory role list; LMS will decide",
     );
   }
   const createInput = userCreateInputSchema.parse(input);
-  const wire = toUserCreateWireData(createInput, password, languageId);
-  const formData = buildUserCreateFormData(wire);
+  const wire = toUserCreateWireData(
+    createInput,
+    password,
+    languageId,
+    registrationBy ?? auth.role ?? "ADMIN",
+  );
+  const formData = buildUserCreateFormData(wire, avatar);
   const payload = await lmsFetchForm<unknown>("users", {
     method: "POST",
     formData,

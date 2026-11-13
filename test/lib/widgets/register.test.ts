@@ -5,7 +5,7 @@ import {
   getWidgetSource,
   widgetSourceKeys,
   widgetSourceSchema,
-} from "./register";
+} from "@/lib/widgets/register";
 
 describe("widget source register", () => {
   it("registers every list source used by tools", () => {
@@ -20,6 +20,7 @@ describe("widget source register", () => {
         "lesson-overall-report",
         "live-class-report",
         "live-class-session-users",
+        "staff-types",
         "user-class-score-report",
         "user-types",
         "users",
