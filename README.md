@@ -14,6 +14,20 @@ Add `OPENAI_API_KEY` to `.env.local`, then:
 pnpm dev
 ```
 
-The app listens on [http://localhost:3606](http://localhost:3606) so it matches `NEXT_PUBLIC_CHATBOT_URL` in the LMS frontend.
+The app listens on [http://localhost:3607](http://localhost:3607). Point the LMS frontend `CHATBOT_URL` at that origin.
+
+### Production (PM2)
+
+```bash
+pnpm build
+pm2 start ecosystem.config.cjs
+# or: pnpm pm2:start
+```
+
+Reload after a new build:
+
+```bash
+pm2 reload ecosystem.config.cjs
+```
 
 The LMS host already injects `window.ChatbotConfig` and loads `/chatbot-widget.js`.

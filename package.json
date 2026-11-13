@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev -p 3606",
+    "dev": "next dev -p 3607",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3607",
+    "pm2:start": "pm2 start ecosystem.config.cjs",
+    "pm2:reload": "pm2 reload ecosystem.config.cjs",
     "test": "node --experimental-strip-types --experimental-transform-types --import ./lib/tools/register-test-loader.mjs --test \"test/**/*.test.ts\" \"features/**/*.test.ts\"",
     "lint": "oxlint && oxfmt --check",
     "lint:fix": "oxlint --fix && oxfmt",

@@ -7,7 +7,7 @@ import {
 
 function agentInternalBaseUrl(): string {
   const raw =
-    process.env.LMS_AGENT_INTERNAL_URL?.trim() || "http://127.0.0.1:3606";
+    process.env.LMS_AGENT_INTERNAL_URL?.trim() || "http://127.0.0.1:3607";
   return raw.replace(/\/$/, "");
 }
 
