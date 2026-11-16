@@ -22,7 +22,8 @@ The app listens on [http://localhost:3607/agent](http://localhost:3607/agent) (`
 both processes: Eve (`.output` from `eve build`) and Next.
 
 ```bash
-# Ensure .env.production has OPENAI_API_KEY, LMS_BACKEND_URL, DB_* (use DB_HOST=127.0.0.1 if Postgres is on this host)
+# Server uses `.env` (OPENAI_API_KEY, LMS_BACKEND_URL, DB_*).
+# If Postgres is on this host, set DB_HOST=127.0.0.1 (not the public IP).
 pnpm build
 pm2 start ecosystem.config.cjs
 # or: pnpm pm2:start
