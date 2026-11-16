@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useLmsSession } from "@/components/lms-session";
+import { withBasePath } from "@/lib/base-path";
 import {
   formSubmissionMessage,
   isSensitiveFormKey,
@@ -77,7 +78,7 @@ async function putSecrets(
   secrets: Record<string, string>,
   session: { token: string; role?: string },
 ): Promise<string> {
-  const response = await fetch("/api/agent/secrets", {
+  const response = await fetch(withBasePath("/api/agent/secrets"), {
     method: "POST",
     headers: {
       Authorization: `Bearer ${session.token}`,

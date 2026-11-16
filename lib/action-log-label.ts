@@ -16,6 +16,8 @@ const OVERRIDES: Record<string, string> = {
   "users-create-user": "creating user",
   "lesson-overall-reprot": "loading lesson report",
   "reports-lesson-overall-reprot": "loading lesson report",
+  "search-mindchamps-knowledge": "searching MindChamps knowledge",
+  "knowledge-search-mindchamps-knowledge": "searching MindChamps knowledge",
   widget_form: "showing form",
 };
 

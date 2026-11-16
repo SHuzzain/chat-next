@@ -1,3 +1,4 @@
+import { withBasePath } from "@/lib/base-path";
 import type { WidgetOption } from "@/lib/widgets/present";
 
 export type WidgetListRequest = {
@@ -24,7 +25,7 @@ export type WidgetListResponse = {
 export async function fetchWidgetList(
   input: WidgetListRequest,
 ): Promise<WidgetListResponse> {
-  const response = await fetch("/api/lms/search", {
+  const response = await fetch(withBasePath("/api/lms/search"), {
     method: "POST",
     signal: input.signal,
     headers: {

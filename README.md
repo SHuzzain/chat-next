@@ -14,7 +14,7 @@ Add `OPENAI_API_KEY` to `.env.local`, then:
 pnpm dev
 ```
 
-The app listens on [http://localhost:3607](http://localhost:3607). Point the LMS frontend `CHATBOT_URL` at that origin.
+The app listens on [http://localhost:3607/agent](http://localhost:3607/agent) (`basePath: /agent`). Point the LMS frontend `NEXT_PUBLIC_CHATBOT_URL` at that base (e.g. `https://lmschatbot.champslms.com/agent`).
 
 ### Production (PM2)
 

@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
+import { embeddingDocumentTable } from "./embedding-document";
 import * as schema from "./schema";
 
 const sql = postgres({
@@ -13,7 +14,9 @@ const sql = postgres({
   max: 2,
 });
 
-export const db = drizzle(sql, { schema });
+export const db = drizzle(sql, {
+  schema: { ...schema, embeddingDocumentTable },
+});
 export const {
   agentEvents,
   agentSessions,
@@ -21,3 +24,4 @@ export const {
   conversationMessages,
   lmsAgent,
 } = schema;
+export { embeddingDocumentTable };

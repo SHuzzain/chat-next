@@ -2,6 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { TooltipIconButton } from "@/components/tooltip-icon-button";
+import { withBasePath } from "@/lib/base-path";
 import { cn } from "@/lib/utils";
 import { ArrowLeftIcon, PlusIcon, SearchIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -73,7 +74,7 @@ export function ThreadsHistoryPage({
   useEffect(() => {
     const controller = new AbortController();
     setStatus("loading");
-    fetch("/api/conversations", {
+    fetch(withBasePath("/api/conversations"), {
       headers: {
         Authorization: `Bearer ${token}`,
         ...(role ? { "x-lms-role": role } : {}),

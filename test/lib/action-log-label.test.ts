@@ -31,5 +31,9 @@ describe("friendlyToolLabel", () => {
       "loading lesson report",
     );
     assert.equal(friendlyToolLabel("widget_form"), "showing form");
+    assert.equal(
+      friendlyToolLabel("knowledge-search-mindchamps-knowledge"),
+      "searching MindChamps knowledge",
+    );
   });
 });

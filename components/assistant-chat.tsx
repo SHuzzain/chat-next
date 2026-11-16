@@ -10,6 +10,7 @@ import {
   EveWidgetFallback,
   eveToolkit,
 } from "@/components/widgets/eve-toolkit";
+import { appBasePath } from "@/lib/base-path";
 import {
   AssistantRuntimeProvider,
   AuiConfig,
@@ -54,7 +55,11 @@ function EveChat({
   tokenRef.current = token;
   roleRef.current = role;
 
+  // Eve defaults to /eve/v1/* at origin root; with Next basePath it must be prefixed.
+  const eveHost = appBasePath();
+
   const runtime = useEveAgentRuntime({
+    ...(eveHost ? { host: eveHost } : {}),
     auth: {
       bearer: async () => tokenRef.current,
     },

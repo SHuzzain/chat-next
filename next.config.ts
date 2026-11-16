@@ -4,11 +4,14 @@ import { withEve } from "eve/next";
 
 const lmsOrigin = process.env.LMS_FRONTEND_ORIGIN || "http://localhost:3100";
 
+/** Shared with Apache: ProxyPass /agent/ → http://127.0.0.1:3607/agent/ */
+const basePath = "/agent";
+
 const nextConfig: NextConfig = {
+  basePath,
   experimental: {
     agentUpgrade: "security",
   },
-  basePath: "/lms-dev",
   transpilePackages: ["@assistant-ui/eve", "@assistant-ui/react"],
   async headers() {
     return [

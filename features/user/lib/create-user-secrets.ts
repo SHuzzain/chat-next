@@ -1,4 +1,5 @@
 import type { LmsAuth } from "@/lib/auth";
+import { withBasePath } from "@/lib/base-path";
 
 import {
   avatarFileFromParts,
@@ -27,7 +28,7 @@ async function takeSecretValues(
 ): Promise<Record<string, string>> {
   const label = kind === "password" ? "Password" : "Profile photo";
   const response = await fetch(
-    `${agentInternalBaseUrl()}/api/agent/secrets/take`,
+    `${agentInternalBaseUrl()}${withBasePath("/api/agent/secrets/take")}`,
     {
       method: "POST",
       headers: {

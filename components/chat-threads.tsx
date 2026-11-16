@@ -4,6 +4,7 @@ import { TextAnimate } from "@/components/ui/text-animate";
 import { TooltipIconButton } from "@/components/tooltip-icon-button";
 import { useLmsSession } from "@/components/lms-session";
 import { displayThreadTitle } from "@/components/threads-history";
+import { withBasePath } from "@/lib/base-path";
 import { useAuiState } from "@assistant-ui/react";
 import { HistoryIcon, PlusIcon } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
@@ -92,7 +93,7 @@ export function SavedTranscript() {
     if (!activeId) return;
     const controller = new AbortController();
     setMessages([]);
-    fetch(`/api/conversations/${encodeURIComponent(activeId)}`, {
+    fetch(withBasePath(`/api/conversations/${encodeURIComponent(activeId)}`), {
       headers: {
         Authorization: `Bearer ${token}`,
         ...(role ? { "x-lms-role": role } : {}),

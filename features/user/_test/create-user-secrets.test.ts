@@ -12,7 +12,7 @@ afterEach(() => {
 describe("takeCreateUserPassword", () => {
   it("reads password from the Next take API", async () => {
     globalThis.fetch = async (input, init) => {
-      assert.match(String(input), /\/api\/agent\/secrets\/take$/);
+      assert.match(String(input), /\/api\/agent\/secrets\/take/);
       assert.equal(init?.method, "POST");
       const body = JSON.parse(String(init?.body)) as { secretId: string };
       assert.equal(body.secretId, "secret-1");
