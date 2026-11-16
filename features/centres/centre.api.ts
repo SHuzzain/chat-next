@@ -2,6 +2,7 @@ import type { LmsAuth } from "@/lib/auth";
 import { canViewCourseCentres } from "@/lib/permissions";
 import { lmsFetch } from "@/lib/tools/api-client";
 
+import { applyCentreListScope } from "./centre-list-scope";
 import {
   centreListFields,
   centreListSchema,
@@ -29,7 +30,7 @@ export async function listCourseCentresByAdvanceFilter(
   });
   const payload = await lmsFetch("course-centres/advance-filter", {
     method: "POST",
-    query: wireQuery,
+    query: applyCentreListScope(wireQuery),
     body: wireBody,
     auth,
   });

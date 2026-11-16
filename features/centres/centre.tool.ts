@@ -16,6 +16,8 @@ Use this tool when users ask about:
 
 Prefer calling this tool as list-centre. Centre ids are used for create-user and reports.
 
+Results are limited to centres the signed-in user belongs to (LMS userType=USER).
+By default only ACTIVE centres are returned; set query.status to list INACTIVE (or other) centres the user can access.
 
   `,
   querySchema: centreListSchema.query,

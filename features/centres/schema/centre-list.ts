@@ -7,7 +7,7 @@ import { paginatedQuerySchema } from "@/lib/tools/api-pagination";
 import { lmsPageSchema } from "@/lib/tools/api-response";
 import { FieldAlias } from "@/lib/tools/api-wire";
 
-import { centreSchema } from "./main-schema";
+import { centreSchema, centreStatusSchema } from "./main-schema";
 
 const namedRefSchema = z.looseObject({
   _id: mongoIdSchema.optional(),
@@ -79,7 +79,12 @@ export const courseCentreRefSchema = centreRefSchema;
 /** @deprecated Prefer {@link centreRowSchema} */
 export const courseCentreSchema = centreRowSchema;
 
-const centreListQuerySchema = paginatedQuerySchema(centreRowSchema);
+const centreListQuerySchema = paginatedQuerySchema(
+  centreRowSchema,
+  z.object({
+    status: centreStatusSchema.optional(),
+  }),
+);
 
 export const centreListSchema = {
   query: centreListQuerySchema,
