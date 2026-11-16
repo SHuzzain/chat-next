@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
     agentUpgrade: "security",
   },
   transpilePackages: ["@assistant-ui/eve", "@assistant-ui/react"],
+  allowedDevOrigins: ["lmschatbot.champslms.com"],
   async headers() {
     return [
       {
