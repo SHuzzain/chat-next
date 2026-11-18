@@ -4,17 +4,21 @@ import {
   ComposerAddAttachment,
   ComposerAttachments,
   UserMessageAttachments,
-} from "@/components/attachment.aui";
-import { File } from "@/components/file";
-import { ThreadFollowupSuggestions } from "@/components/follow-up-suggestions.aui";
-import { Image } from "@/components/image";
-import { MarkdownText } from "@/components/markdown-text";
-import { ActionLogLine } from "@/components/action-log";
-import { ToolFallback } from "@/components/tool-fallback.aui";
-import { ChatHeader, SavedTranscript, useChatThreads } from "@/components/chat-threads";
-import { TooltipIconButton } from "@/components/tooltip-icon-button";
+} from "@/components/chat/attachment.aui";
+import { File } from "@/components/message/file";
+import { ThreadFollowupSuggestions } from "@/components/chat/follow-up-suggestions.aui";
+import { Image } from "@/components/message/image";
+import { MarkdownText } from "@/components/message/markdown-text";
+import { ActionLogLine } from "@/components/tools/action-log";
+import { ToolFallback } from "@/components/tools/tool-fallback.aui";
+import { ChatHeader, SavedTranscript, useChatThreads } from "@/components/chat/chat-threads";
+import { TooltipIconButton } from "@/components/shared/tooltip-icon-button";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  VoiceSessionBar,
+  VoiceSessionCallScreen,
+} from "@/components/voice/voice-session-chrome";
 import { cn } from "@/lib/utils";
 import {
   ActionBarMorePrimitive,
@@ -193,6 +197,8 @@ const ThreadRoot: FC<{ isEmpty: boolean; autoFocus: boolean }> = ({
       }}
     >
       <ChatHeader />
+      <VoiceSessionBar />
+      <VoiceSessionCallScreen />
       <ThreadPrimitive.Viewport
         turnAnchor="top"
         data-slot="aui_thread-viewport"

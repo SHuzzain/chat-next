@@ -4,6 +4,7 @@ import { listUserTypes } from "./user-type.api";
 import { userTypeListRowSchema, userTypeListSchema } from "./schema/user-type-list";
 
 export const userTypeListTool = createPaginatedTool({
+  permission: "userTypes:read",
   description: `
 List LMS user types (roles) for assigning when creating a user.
 

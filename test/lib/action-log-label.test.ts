@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { friendlyToolLabel } from "@/lib/action-log-label";
+import {
+  attachmentActionLogLabel,
+  friendlyToolLabel,
+  streamingPhaseFromResult,
+  toolActionLogLabel,
+} from "@/lib/action-log-label";
 
 describe("friendlyToolLabel", () => {
   it("strips folder prefix and maps list-/get- tools", () => {
@@ -34,6 +39,72 @@ describe("friendlyToolLabel", () => {
     assert.equal(
       friendlyToolLabel("knowledge-search-mindchamps-knowledge"),
       "searching MindChamps knowledge",
+    );
+  });
+});
+
+describe("streamingPhaseFromResult", () => {
+  it("reads a non-empty phase string", () => {
+    assert.equal(
+      streamingPhaseFromResult({ phase: "  Checking centres…  " }),
+      "Checking centres…",
+    );
+  });
+
+  it("ignores missing or blank phase", () => {
+    assert.equal(streamingPhaseFromResult(undefined), undefined);
+    assert.equal(streamingPhaseFromResult({}), undefined);
+    assert.equal(streamingPhaseFromResult({ phase: "   " }), undefined);
+  });
+});
+
+describe("toolActionLogLabel", () => {
+  it("prefers streamed phase over the tool name", () => {
+    assert.equal(
+      toolActionLogLabel({
+        toolName: "create-user",
+        result: { phase: "Checking 2 centres…" },
+      }),
+      "Checking 2 centres…",
+    );
+  });
+
+  it("falls back to the friendly tool name", () => {
+    assert.equal(
+      toolActionLogLabel({ toolName: "create-user" }),
+      "creating user",
+    );
+  });
+
+  it("applies cancelled and failed suffixes", () => {
+    assert.equal(
+      toolActionLogLabel({ toolName: "create-user", cancelled: true }),
+      "creating user (cancelled)",
+    );
+    assert.equal(
+      toolActionLogLabel({
+        toolName: "create-user",
+        failed: true,
+        result: { phase: "ignored when failed" },
+      }),
+      "creating user failed",
+    );
+  });
+});
+
+describe("attachmentActionLogLabel", () => {
+  it("describes uploading and failed uploads", () => {
+    assert.equal(
+      attachmentActionLogLabel({ name: "ada.png", uploading: true }),
+      "uploading ada.png…",
+    );
+    assert.equal(
+      attachmentActionLogLabel({
+        name: "ada.png",
+        failed: true,
+        errorMessage: "too large",
+      }),
+      "upload failed: ada.png (too large)",
     );
   });
 });

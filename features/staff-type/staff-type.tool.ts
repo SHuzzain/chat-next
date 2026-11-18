@@ -7,6 +7,7 @@ import {
 } from "./schema/staff-type-list";
 
 export const staffTypeListTool = createPaginatedTool({
+  permission: "staffType:read",
   description: `
 List and search LMS staff types (e.g. English Teacher, Principal).
 

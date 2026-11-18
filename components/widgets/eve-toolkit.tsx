@@ -2,9 +2,9 @@
 
 import { defineToolkit, type ToolCallMessagePartComponent } from "@assistant-ui/react";
 import type { z } from "zod";
-import { ASK_WIDGET_TOOLS } from "@/components/action-log";
+import { ASK_WIDGET_TOOLS } from "@/components/tools/action-log";
 import { FieldDescription } from "@/components/ui/field";
-import { ToolFallback } from "@/components/tool-fallback.aui";
+import { ToolFallback } from "@/components/tools/tool-fallback.aui";
 import { copyToClipboardParameters } from "@/lib/widgets/schema/copy-to-clipboard";
 import { getTimezoneParameters } from "@/lib/widgets/schema/get-timezone";
 import { widgetDataTableParameters } from "@/lib/widgets/schema/widget-data-table";

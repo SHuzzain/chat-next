@@ -4,6 +4,7 @@ import { listCourseCentresByAdvanceFilter } from "./centre.api";
 import { centreListSchema, centreRowSchema } from "./schema";
 
 export const courseCentreListTool = createPaginatedTool({
+  permission: "master.centre:read",
   description: `
 List and search LMS Centres.
 

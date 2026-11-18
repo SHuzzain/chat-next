@@ -4,6 +4,7 @@ import { listClasses } from "./class.api";
 import { classListSchema, classRowSchema } from "./schema";
 
 export const classListTool = createPaginatedTool({
+  permission: "intakes:read",
   description: `
 List and search LMS Classes.
 

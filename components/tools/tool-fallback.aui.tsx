@@ -30,8 +30,8 @@ import {
 import {
   ActionLogLine,
   ASK_WIDGET_TOOLS,
-  friendlyToolLabel,
-} from "@/components/action-log";
+  toolActionLogLabel,
+} from "@/components/tools/action-log";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -1230,11 +1230,12 @@ const ToolFallbackImpl: ToolCallMessagePartComponent = ({
     return null;
   }
 
-  const label = isCancelled
-    ? `${friendlyToolLabel(toolName)} (cancelled)`
-    : isFailed
-      ? `${friendlyToolLabel(toolName)} failed`
-      : friendlyToolLabel(toolName);
+  const label = toolActionLogLabel({
+    toolName,
+    result,
+    cancelled: isCancelled,
+    failed: isFailed,
+  });
 
   // Approval gates still need the full controls; otherwise one action-log line.
   if (!shouldRenderApproval && !isSettled(approval)) {

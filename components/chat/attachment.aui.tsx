@@ -2,6 +2,8 @@
 
 import {
   type PropsWithChildren,
+  useEffect,
+  useMemo,
   useState,
   type FC,
   isValidElement,
@@ -19,6 +21,7 @@ import {
   MessagePrimitive,
   useAuiState,
   useAui,
+  useAuiEvent,
 } from "@assistant-ui/react";
 import {
   Tooltip,
@@ -33,7 +36,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { TooltipIconButton } from "@/components/tooltip-icon-button";
+import {
+  ActionLogLine,
+  attachmentActionLogLabel,
+} from "@/components/tools/action-log";
+import { TooltipIconButton } from "@/components/shared/tooltip-icon-button";
 import { useAttachmentSrc } from "@/hooks/use-attachment-src";
 import { cn } from "@/lib/utils";
 
@@ -223,6 +230,84 @@ const AttachmentUI: FC = () => {
   );
 };
 
+type AttachmentStatusLine = {
+  id: string;
+  name: string;
+  uploading: boolean;
+  failed: boolean;
+  errorMessage?: string;
+};
+
+function ComposerAttachmentStatusLog() {
+  const [addError, setAddError] = useState<string | undefined>();
+  // Select store values as-is — never allocate arrays inside useAuiState
+  // (useSyncExternalStore getServerSnapshot must return a cached snapshot).
+  const attachments = useAuiState((s) => s.composer.attachments);
+  const hasSubmission = useAuiState(
+    (s) => s.composer.submission !== undefined,
+  );
+
+  useAuiEvent("composer.attachmentAddError", ({ message }) => {
+    setAddError(message || "Attachment failed to upload.");
+  });
+
+  useEffect(() => {
+    setAddError(undefined);
+  }, [attachments.length]);
+
+  const lines = useMemo((): AttachmentStatusLine[] => {
+    return attachments.flatMap((attachment) => {
+      const failed =
+        attachment.status.type === "incomplete" &&
+        attachment.status.reason === "error";
+      const uploading =
+        attachment.status.type === "running" ||
+        (hasSubmission && attachment.status.type !== "complete" && !failed);
+      if (!failed && !uploading) return [];
+      return [
+        {
+          id: attachment.id,
+          name: attachment.name,
+          uploading,
+          failed,
+          errorMessage:
+            failed &&
+            attachment.status.type === "incomplete" &&
+            attachment.status.reason === "error"
+              ? attachment.status.message
+              : undefined,
+        },
+      ];
+    });
+  }, [attachments, hasSubmission]);
+
+  if (lines.length === 0 && !addError) return null;
+
+  return (
+    <div className="aui-composer-attachment-status flex w-full flex-col gap-0.5 px-0.5">
+      {addError ? (
+        <ActionLogLine
+          label={addError}
+          failed
+        />
+      ) : null}
+      {lines.map((line) => (
+        <ActionLogLine
+          key={line.id}
+          label={attachmentActionLogLabel({
+            name: line.name,
+            uploading: line.uploading,
+            failed: line.failed,
+            errorMessage: line.errorMessage,
+          })}
+          active={line.uploading}
+          failed={line.failed}
+        />
+      ))}
+    </div>
+  );
+}
+
 const AttachmentRemove: FC<{ name: string }> = ({ name }) => {
   return (
     <AttachmentPrimitive.Remove
@@ -251,10 +336,13 @@ export const UserMessageAttachments: FC = () => {
 
 export const ComposerAttachments: FC = () => {
   return (
-    <div className="aui-composer-attachments flex w-full flex-row items-center gap-2 overflow-x-auto empty:hidden">
-      <ComposerPrimitive.Attachments>
-        {() => <AttachmentUI />}
-      </ComposerPrimitive.Attachments>
+    <div className="aui-composer-attachments flex w-full flex-col gap-1 empty:hidden">
+      <ComposerAttachmentStatusLog />
+      <div className="flex w-full flex-row items-center gap-2 overflow-x-auto">
+        <ComposerPrimitive.Attachments>
+          {() => <AttachmentUI />}
+        </ComposerPrimitive.Attachments>
+      </div>
     </div>
   );
 };

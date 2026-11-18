@@ -1,7 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { TooltipIconButton } from "@/components/tooltip-icon-button";
+import { TooltipIconButton } from "@/components/shared/tooltip-icon-button";
 import { withBasePath } from "@/lib/base-path";
 import { cn } from "@/lib/utils";
 import { ArrowLeftIcon, PlusIcon, SearchIcon } from "lucide-react";

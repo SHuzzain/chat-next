@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLmsSession } from "@/components/lms-session";
+import { useLmsSession } from "@/components/providers/lms-session";
 import { fetchWidgetList } from "@/lib/widgets/fetch-widget-list";
 
 import { CheckboxWidget } from "./checkbox-widget";

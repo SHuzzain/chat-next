@@ -3,11 +3,21 @@
 import { cn } from "@/lib/utils";
 import {
   ASK_WIDGET_TOOLS,
+  attachmentActionLogLabel,
   formatElapsedMs,
   friendlyToolLabel,
+  streamingPhaseFromResult,
+  toolActionLogLabel,
 } from "@/lib/action-log-label";
 
-export { ASK_WIDGET_TOOLS, formatElapsedMs, friendlyToolLabel };
+export {
+  ASK_WIDGET_TOOLS,
+  attachmentActionLogLabel,
+  formatElapsedMs,
+  friendlyToolLabel,
+  streamingPhaseFromResult,
+  toolActionLogLabel,
+};
 
 type ActionLogLineProps = {
   label: string;

@@ -20,7 +20,7 @@
     "db:push": "node --env-file=.env.local ./node_modules/drizzle-kit/bin.cjs push"
   },
   "dependencies": {
-    "@assistant-ui/eve": "latest",
+    "@assistant-ui/eve": "^0.0.22",
     "@assistant-ui/react": "^0.15.25",
     "@assistant-ui/react-streamdown": "^0.3.20",
     "@base-ui/react": "^1.8.0",
@@ -31,7 +31,7 @@
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
     "drizzle-orm": "^0.45.3",
-    "eve": "^0.70.1",
+    "eve": "^0.70.3",
     "katex": "^0.19.0",
     "lucide-react": "^1.49.0",
     "motion": "^14.12.0",
@@ -40,7 +40,7 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "streamdown": "^2.7.1",
-    "tw-shimmer": "^0.4.13",
+    "tw-shimmer": "^0.4.14",
     "xlsx": "^0.18.5",
     "zod": "^4.6.5",
     "zustand": "^5.0.15"

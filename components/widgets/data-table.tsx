@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useLmsSession } from "@/components/lms-session";
+import { useLmsSession } from "@/components/providers/lms-session";
 import { fetchWidgetList } from "@/lib/widgets/fetch-widget-list";
 import { displayValue } from "@/lib/widgets/present";
 import type { WidgetDataTableColumn } from "@/lib/widgets/schema/widget-data-table";

@@ -1,6 +1,6 @@
 "use client";
 
-import { ThreadsHistoryPage } from "@/components/threads-history";
+import { ThreadsHistoryPage } from "@/components/chat/threads-history";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 

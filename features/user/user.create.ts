@@ -1,9 +1,9 @@
 import { defineTool } from "eve/tools";
 
 import { resolveDefaultLanguageId } from "@/features/language";
-import { canCreateUsers } from "@/lib/permissions";
+import { assertCapabilities } from "@/lib/privileges/with-permission";
 import { LmsApiError } from "@/lib/tools/api-client";
-import { lmsAuthFromContext } from "@/lib/tools/api-tool-context";
+import { requireLmsContext } from "@/lib/tools/api-tool-context";
 
 import { AVATAR_ACCEPT, AVATAR_MAX_BYTES } from "./lib/avatar-constraints";
 import {
@@ -65,12 +65,15 @@ Do not collect admission number (system-generated).
         : "User created",
   },
   async *execute(input, ctx): AsyncGenerator<UserCreateProgress> {
-    const auth = lmsAuthFromContext(ctx);
-    if (!canCreateUsers(auth)) {
-      throw new Error(
-        "Permission denied: only administrators can create users.",
-      );
-    }
+    const lms = requireLmsContext(ctx);
+    await assertCapabilities(lms, "users:create");
+
+    const auth = {
+      token: lms.token,
+      principalId: lms.userId,
+      credentialId: lms.credentialId,
+      ...(lms.role ? { role: lms.role } : {}),
+    };
 
     if (!auth.principalId) {
       throw new Error("Authenticated LMS principal is required.");

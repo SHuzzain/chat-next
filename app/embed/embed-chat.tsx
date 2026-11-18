@@ -1,6 +1,6 @@
 "use client";
 
-import { AssistantChat } from "@/components/assistant-chat";
+import { AssistantChat } from "@/components/chat/assistant-chat";
 import { readEmbedSession, saveEmbedSession } from "@/lib/lms-embed-session";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";

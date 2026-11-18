@@ -55,3 +55,44 @@ export function friendlyToolLabel(toolName: string): string {
 export function formatElapsedMs(ms: number): string {
   return `${Math.max(0, Math.round(ms))}ms`;
 }
+
+/** Streaming tools yield `{ phase }` as a preliminary / final result field. */
+export function streamingPhaseFromResult(result: unknown): string | undefined {
+  if (!result || typeof result !== "object") return undefined;
+  const phase = (result as { phase?: unknown }).phase;
+  if (typeof phase !== "string") return undefined;
+  const trimmed = phase.trim();
+  return trimmed || undefined;
+}
+
+/**
+ * Action-log text for a tool call: prefer streamed `phase`, else the
+ * friendly tool name, with cancelled / failed suffixes.
+ */
+export function toolActionLogLabel(options: {
+  toolName: string;
+  result?: unknown;
+  cancelled?: boolean;
+  failed?: boolean;
+}): string {
+  const base = friendlyToolLabel(options.toolName);
+  if (options.cancelled) return `${base} (cancelled)`;
+  if (options.failed) return `${base} failed`;
+  return streamingPhaseFromResult(options.result) ?? base;
+}
+
+/** Action-log text while a composer file is uploading / failed. */
+export function attachmentActionLogLabel(options: {
+  name: string;
+  uploading?: boolean;
+  failed?: boolean;
+  errorMessage?: string;
+}): string {
+  const name = options.name.trim() || "file";
+  if (options.failed) {
+    const detail = options.errorMessage?.trim();
+    return detail ? `upload failed: ${name} (${detail})` : `upload failed: ${name}`;
+  }
+  if (options.uploading) return `uploading ${name}…`;
+  return name;
+}

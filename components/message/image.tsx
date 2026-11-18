@@ -25,7 +25,7 @@ import type {
   ImageMessagePartComponent,
 } from "@assistant-ui/react";
 import { cn } from "@/lib/utils";
-import { hostOf, safeHref } from "@/components/href";
+import { hostOf, safeHref } from "@/components/shared/href";
 
 const extensionForMimeType = (mimeType?: string): string => {
   switch (mimeType) {

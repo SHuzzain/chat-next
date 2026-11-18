@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useLmsSession } from "@/components/lms-session";
+import { useLmsSession } from "@/components/providers/lms-session";
 import { withBasePath } from "@/lib/base-path";
 import {
   formSubmissionMessage,

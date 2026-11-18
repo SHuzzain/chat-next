@@ -4,6 +4,7 @@ import { listUsers } from "./user.api";
 import { userInfoListSchema, userInfoRowSchema } from "./schema";
 
 export const userListTool = createPaginatedTool({
+  permission: "users:read",
   description: `
 List and search LMS users (learners and staff).
 

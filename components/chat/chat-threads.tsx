@@ -1,9 +1,9 @@
 "use client";
 
 import { TextAnimate } from "@/components/ui/text-animate";
-import { TooltipIconButton } from "@/components/tooltip-icon-button";
-import { useLmsSession } from "@/components/lms-session";
-import { displayThreadTitle } from "@/components/threads-history";
+import { TooltipIconButton } from "@/components/shared/tooltip-icon-button";
+import { useLmsSession } from "@/components/providers/lms-session";
+import { displayThreadTitle } from "@/components/chat/threads-history";
 import { withBasePath } from "@/lib/base-path";
 import { useAuiState } from "@assistant-ui/react";
 import { HistoryIcon, PlusIcon } from "lucide-react";

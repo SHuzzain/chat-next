@@ -1,16 +1,18 @@
 "use client";
 
-import { AssistantModal } from "@/components/assistant-modal.aui";
-import { Thread } from "@/components/thread.aui";
-import { ChatThreadProvider } from "@/components/chat-threads";
-import { EveAuthorization } from "@/components/eve-authorization";
-import { LmsSessionProvider } from "@/components/lms-session";
-import { QueryProvider } from "@/components/query-provider";
+import { AssistantModal } from "@/components/chat/assistant-modal.aui";
+import { Thread } from "@/components/chat/thread.aui";
+import { ChatThreadProvider } from "@/components/chat/chat-threads";
+import { EveAuthorization } from "@/components/providers/eve-authorization";
+import { LmsSessionProvider } from "@/components/providers/lms-session";
+import { QueryProvider } from "@/components/providers/query-provider";
 import {
   EveWidgetFallback,
   eveToolkit,
 } from "@/components/widgets/eve-toolkit";
 import { appBasePath } from "@/lib/base-path";
+import { composerAttachmentAdapter } from "@/lib/composer-attachments";
+import { createOpenAIRealtimeVoiceAdapter } from "@/lib/voice/create-openai-realtime-adapter";
 import {
   AssistantRuntimeProvider,
   AuiConfig,
@@ -18,7 +20,7 @@ import {
   Tools,
 } from "@assistant-ui/react";
 import { useEveAgentRuntime } from "@assistant-ui/eve";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 type AssistantChatProps = {
   token: string;
@@ -58,6 +60,15 @@ function EveChat({
   // Eve defaults to /eve/v1/* at origin root; with Next basePath it must be prefixed.
   const eveHost = appBasePath();
 
+  const voice = useMemo(
+    () =>
+      createOpenAIRealtimeVoiceAdapter({
+        getToken: () => tokenRef.current,
+        getRole: () => roleRef.current,
+      }),
+    [],
+  );
+
   const runtime = useEveAgentRuntime({
     ...(eveHost ? { host: eveHost } : {}),
     auth: {
@@ -69,6 +80,10 @@ function EveChat({
       };
       if (roleRef.current) headers["x-lms-role"] = roleRef.current;
       return headers;
+    },
+    adapters: {
+      attachments: composerAttachmentAdapter,
+      voice,
     },
     onSessionChange: (session) => onSessionId(session?.sessionId),
     ...(sessionId

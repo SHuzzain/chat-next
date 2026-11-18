@@ -1,7 +1,9 @@
 import { defineTool } from "eve/tools";
+import type { SessionContext } from "eve/context";
 import { z } from "zod";
 
 import type { LmsAuth } from "@/lib/auth";
+import { withPermission } from "@/lib/privileges/with-permission";
 import { listModelValueSchema } from "@/lib/widgets/schema/model-output";
 import {
   listPurposes,
@@ -13,7 +15,7 @@ import {
 } from "@/lib/widgets/present";
 
 import { mergeDisplaySelect } from "./api-request";
-import { lmsAuthFromContext } from "./api-tool-context";
+import { lmsAuthFromContext, type LmsToolContext } from "./api-tool-context";
 
 function asWidgetPage(value: unknown): WidgetPage {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
@@ -32,8 +34,9 @@ function asWidgetPage(value: unknown): WidgetPage {
 }
 
 function asRequestRecord(value: unknown): Record<string, unknown> | undefined {
-  if (!value || typeof value !== "object" || Array.isArray(value))
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
+  }
   return value as Record<string, unknown>;
 }
 
@@ -62,6 +65,37 @@ function widgetView(
   }).value;
 }
 
+function authFromLms(lms: LmsToolContext): LmsAuth {
+  return {
+    token: lms.token,
+    principalId: lms.userId,
+    credentialId: lms.credentialId,
+    ...(lms.role ? { role: lms.role } : {}),
+  };
+}
+
+/** Copy a tool body object, or `{}` when missing / not a plain object. */
+function copyBody(body: unknown): Record<string, unknown> {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return {};
+  return { ...body };
+}
+
+/**
+ * Ensure widget display columns stay in `advanceFilterSelect`
+ * even when the model only asked for a few fields.
+ */
+function bodyWithDisplaySelect<TBody>(
+  body: unknown,
+  rowSchema: z.ZodType,
+): TBody {
+  const next = copyBody(body);
+  const existing = Array.isArray(next.advanceFilterSelect)
+    ? (next.advanceFilterSelect as string[])
+    : undefined;
+  next.advanceFilterSelect = mergeDisplaySelect(existing, rowSchema);
+  return next as TBody;
+}
+
 export function createPaginatedTool<
   TQuery extends z.ZodType,
   TBody extends z.ZodType,
@@ -71,6 +105,8 @@ export function createPaginatedTool<
   querySchema: TQuery;
   bodySchema: TBody;
   outputSchema: TOutput;
+  /** Catalog capability key(s); when set, gates execute via withPermission. */
+  permission?: string | string[];
   widget: {
     entry: string;
     source: string;
@@ -90,6 +126,36 @@ export function createPaginatedTool<
 
   const entity = config.widget.entry.toLowerCase();
 
+  async function runList(input: ToolInput, auth: LmsAuth) {
+    const purpose = input.purpose ?? "show";
+    const selection = input.selection ?? "single";
+    const body = bodyWithDisplaySelect<z.infer<TBody>>(
+      input.body,
+      config.widget.rowSchema,
+    );
+
+    const data = config.outputSchema.parse(
+      await config.execute({ query: input.query, body }, auth),
+    );
+
+    return {
+      data,
+      purpose,
+      selection,
+      view: widgetView(data, config.widget, purpose, selection, {
+        query: input.query,
+        body,
+      }),
+    };
+  }
+
+  const execute = config.permission
+    ? withPermission(config.permission, async (input, lms) =>
+        runList(input as ToolInput, authFromLms(lms)),
+      )
+    : async (input: unknown, ctx: SessionContext) =>
+        runList(input as ToolInput, lmsAuthFromContext(ctx));
+
   return defineTool({
     description: config.description,
     inputSchema: z.object({
@@ -108,6 +174,7 @@ export function createPaginatedTool<
           "Use single when the question needs one record. Use multi when the user asked for several records.",
         ),
     }),
+
     outputSchema: z.object({
       data: config.outputSchema,
       purpose: z.enum(listPurposes),
@@ -118,41 +185,7 @@ export function createPaginatedTool<
       start: () => `Searching ${entity}s…`,
       complete: () => `Found ${entity}s`,
     },
-    execute: async (input, ctx) => {
-      const parsed = input as ToolInput;
-      const incomingBody: Record<string, unknown> =
-        parsed.body &&
-        typeof parsed.body === "object" &&
-        !Array.isArray(parsed.body)
-          ? Object.assign({}, parsed.body as Record<string, unknown>)
-          : {};
-      const body = Object.assign({}, incomingBody, {
-        advanceFilterSelect: mergeDisplaySelect(
-          Array.isArray(incomingBody.advanceFilterSelect)
-            ? (incomingBody.advanceFilterSelect as string[])
-            : undefined,
-          config.widget.rowSchema,
-        ),
-      }) as z.infer<TBody>;
-      const data = config.outputSchema.parse(
-        await config.execute(
-          { query: parsed.query, body },
-          lmsAuthFromContext(ctx),
-        ),
-      );
-      const purpose = parsed.purpose ?? "show";
-      const selection = parsed.selection ?? "single";
-
-      return {
-        data,
-        purpose,
-        selection,
-        view: widgetView(data, config.widget, purpose, selection, {
-          query: parsed.query,
-          body,
-        }),
-      };
-    },
+    execute,
     toModelOutput: (output) => {
       const parsed = output as {
         data: unknown;

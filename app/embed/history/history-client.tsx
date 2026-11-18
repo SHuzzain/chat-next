@@ -1,6 +1,6 @@
 "use client";
 
-import { ThreadsHistoryPage } from "@/components/threads-history";
+import { ThreadsHistoryPage } from "@/components/chat/threads-history";
 import { readEmbedSession, saveEmbedSession } from "@/lib/lms-embed-session";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
