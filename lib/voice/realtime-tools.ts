@@ -26,13 +26,25 @@ export type LmsAgentToolArgs = {
 
 export function parseLmsAgentArgs(raw: unknown): LmsAgentToolArgs {
   let value = raw;
+
+  // Realtime may send a JSON string, a plain utterance, or an object.
   if (typeof value === "string") {
-    try {
-      value = JSON.parse(value) as unknown;
-    } catch {
-      throw new Error("lms_agent arguments must be valid JSON.");
+    const trimmed = value.trim();
+    if (!trimmed) {
+      throw new Error("lms_agent message must not be empty.");
+    }
+    if (trimmed.startsWith("{")) {
+      try {
+        value = JSON.parse(trimmed) as unknown;
+      } catch {
+        // Treat as the spoken request when the model emits non-JSON text.
+        return { message: trimmed };
+      }
+    } else {
+      return { message: trimmed };
     }
   }
+
   if (
     value === null ||
     typeof value !== "object" ||

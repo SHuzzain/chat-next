@@ -17,6 +17,12 @@ describe("parseLmsAgentArgs", () => {
   it("rejects empty message", () => {
     assert.throws(() => parseLmsAgentArgs({ message: "  " }));
   });
+
+  it("accepts a plain utterance string", () => {
+    assert.deepEqual(parseLmsAgentArgs("List my classes"), {
+      message: "List my classes",
+    });
+  });
 });
 
 describe("claimFunctionCallId", () => {

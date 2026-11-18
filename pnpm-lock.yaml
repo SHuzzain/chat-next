@@ -4,9 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  '@assistant-ui/core': 0.3.37
-
 importers:
 
   .:
