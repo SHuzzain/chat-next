@@ -33,9 +33,9 @@ function createEveClient(auth: LmsAuth) {
 
 function summarizeWaiting(inputRequests: readonly { kind?: string }[]): string {
   if (inputRequests.length === 0) {
-    return "I need a bit more information or confirmation before I can finish that. You can continue in the text chat if the next step needs a form or picker.";
+    return "I need a bit more information on screen before I can finish that. Please use the form or picker in the voice panel, then we can continue.";
   }
-  return "I need your confirmation or more details before finishing that LMS action. Continue in the text chat for forms and pickers, or tell me the missing details now.";
+  return "I need your confirmation or more details on screen before finishing that LMS action. Fill in the form or picker in the voice panel — you can stay on the call.";
 }
 
 /**
@@ -51,7 +51,9 @@ export async function runEveVoiceTurn(options: {
   const client = createEveClient(options.auth);
   const clientContext = {
     channel: "voice",
-    note: "Voice gateway turn — prefer concise answers; widgets are limited on voice.",
+    utterance: options.message,
+    preferWidgetDefaults: true,
+    note: "Voice gateway turn — prefer concise spoken answers. When showing widgets, prefill non-sensitive fields from the utterance via defaultValue; leave passwords and file uploads empty for the user to enter on screen.",
   };
 
   const response = options.sessionId

@@ -23,6 +23,14 @@ export type OpenAIRealtimeVoiceAdapterOptions = {
   invokeLmsTool?: (
     input: InvokeLmsToolInput,
   ) => Promise<InvokeLmsToolResult>;
+  /** Seed / sync Eve session id with the Thread runtime. */
+  getEveSessionId?: () => string | undefined;
+  onEveSessionId?: (sessionId: string) => void;
+  /** Fired after each `lms_agent` gateway result (e.g. show mid-call widgets). */
+  onToolStatus?: (
+    status: InvokeLmsToolResult["status"],
+    sessionId: string,
+  ) => void;
 };
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
@@ -68,7 +76,7 @@ export class OpenAIRealtimeVoiceAdapter implements RealtimeVoiceAdapter {
       let generating = false;
       let speaking = false;
       let transcribing = false;
-      let eveSessionId: string | undefined;
+      let eveSessionId: string | undefined = this.options.getEveSessionId?.();
       const handledCallIds = new Set<string>();
       let volumeTimer: ReturnType<typeof setInterval> | undefined;
       let connectionTimer: ReturnType<typeof setTimeout> | undefined;
@@ -216,6 +224,8 @@ export class OpenAIRealtimeVoiceAdapter implements RealtimeVoiceAdapter {
                 error: `Unsupported tool: ${call.name}`,
               });
             } else {
+              eveSessionId =
+                eveSessionId ?? this.options.getEveSessionId?.();
               const result = await invoke({
                 name: call.name,
                 callId: call.call_id,
@@ -224,6 +234,8 @@ export class OpenAIRealtimeVoiceAdapter implements RealtimeVoiceAdapter {
                 signal: controller.signal,
               });
               eveSessionId = result.eveSessionId;
+              this.options.onEveSessionId?.(eveSessionId);
+              this.options.onToolStatus?.(result.status, eveSessionId);
               toolOutput = result.output;
             }
           } catch (error) {

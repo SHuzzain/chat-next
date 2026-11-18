@@ -1,62 +1,44 @@
 "use client";
 
-import { AuiIf } from "@assistant-ui/react";
-import dynamic from "next/dynamic";
+import { TooltipIconButton } from "@/components/shared/tooltip-icon-button";
+import { useChatThreads } from "@/components/chat/chat-threads";
+import { PhoneIcon } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { FC } from "react";
 
 /**
- * Official assistant-ui voice chrome:
- * - VoiceControl: connect / mute / hangup bar ([Orb](https://www.assistant-ui.com/elements/orb))
- * - VoiceConversation: live call screen ([Voice conversation](https://www.assistant-ui.com/elements/voice-conversation))
- *
- * Loaded dynamically so WebGL/orb code stays out of the default chat chunk.
+ * Composer control: open the dedicated Voice Agent page (shared Eve session).
  */
-const VoiceControl = dynamic(
-  () => import("@/components/voice/voice.aui").then((m) => m.VoiceControl),
-  { ssr: false },
-);
+export const ComposerVoiceButton: FC = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { activeId, selectedTitle } = useChatThreads();
 
-const VoiceConversation = dynamic(
-  () =>
-    import("@/components/voice/voice-conversation.aui").then(
-      (m) => m.VoiceConversation,
-    ),
-  { ssr: false },
-);
+  const onClick = () => {
+    const embed = pathname.startsWith("/embed");
+    const path = embed ? "/embed/voice-agent" : "/voice-agent";
+    const params = new URLSearchParams();
+    if (activeId) params.set("thread", activeId);
+    if (selectedTitle) params.set("title", selectedTitle);
+    const theme = searchParams.get("theme");
+    if (theme) params.set("theme", theme);
+    const query = params.toString();
+    router.push(query ? `${path}?${query}` : path);
+  };
 
-const VoiceOrb = dynamic(
-  () => import("@/components/voice/voice.aui").then((m) => m.VoiceOrb),
-  { ssr: false },
-);
-
-export const VoiceSessionBar: FC = () => (
-  <AuiIf condition={(s) => s.thread.capabilities.voice}>
-    <div className="flex flex-col gap-1 border-b">
-      <VoiceControl className="border-b-0" />
-      <p className="text-muted-foreground px-4 pb-2 text-[11px] leading-snug">
-        Live OpenAI voice call — LMS actions run through Eve with your
-        permissions. Forms/approvals may need the text chat. Transcript clears
-        when you hang up.
-      </p>
-    </div>
-  </AuiIf>
-);
-
-/**
- * Call overlay matching assistant-ui docs:
- * - [VoiceOrb](https://www.assistant-ui.com/elements/orb) for live amplitude
- * - [VoiceConversation](https://www.assistant-ui.com/elements/voice-conversation) for
- *   caption, session transcript tail, mute, hang up
- */
-export const VoiceSessionCallScreen: FC = () => (
-  <AuiIf
-    condition={(s) =>
-      s.thread.voice != null && s.thread.voice.status.type !== "ended"
-    }
-  >
-    <div className="bg-background/90 absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 px-4 backdrop-blur-sm">
-      <VoiceOrb variant="blue" className="size-28" />
-      <VoiceConversation />
-    </div>
-  </AuiIf>
-);
+  return (
+    <TooltipIconButton
+      tooltip="Open voice agent"
+      side="bottom"
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="text-muted-foreground hover:text-foreground size-7 rounded-full"
+      aria-label="Open voice agent"
+      onClick={onClick}
+    >
+      <PhoneIcon className="size-4" />
+    </TooltipIconButton>
+  );
+};

@@ -16,6 +16,8 @@
   var launcher = document.getElementById(launcherId);
   var ready = false;
   var open = false;
+  // Voice (Realtime) needs mic + autoplay inside the cross-origin embed.
+  var iframeAllow = "microphone; autoplay; clipboard-write";
 
   function liveConfig() {
     return host.ChatbotConfig || config;
@@ -98,6 +100,14 @@
     postSession();
   }
 
+  if (iframe && iframe.allow !== iframeAllow) {
+    iframe.allow = iframeAllow;
+    // allow takes effect on navigation; reload so mic policy applies.
+    try {
+      iframe.src = iframe.src;
+    } catch (_) {}
+  }
+
   if (!iframe) {
     launcher = document.createElement("button");
     launcher.id = launcherId;
@@ -127,7 +137,7 @@
     iframe.id = widgetId;
     iframe.title = "LMS assistant";
     iframe.src = embedSrc(themeOf(config));
-    iframe.allow = "clipboard-write";
+    iframe.allow = iframeAllow;
     iframe.style.cssText = [
       "position:fixed",
       "right:20px",

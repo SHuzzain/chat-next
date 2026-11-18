@@ -12,7 +12,6 @@ import {
 } from "@/components/widgets/eve-toolkit";
 import { appBasePath } from "@/lib/base-path";
 import { composerAttachmentAdapter } from "@/lib/composer-attachments";
-import { createOpenAIRealtimeVoiceAdapter } from "@/lib/voice/create-openai-realtime-adapter";
 import {
   AssistantRuntimeProvider,
   AuiConfig,
@@ -20,7 +19,7 @@ import {
   Tools,
 } from "@assistant-ui/react";
 import { useEveAgentRuntime } from "@assistant-ui/eve";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 type AssistantChatProps = {
   token: string;
@@ -60,15 +59,6 @@ function EveChat({
   // Eve defaults to /eve/v1/* at origin root; with Next basePath it must be prefixed.
   const eveHost = appBasePath();
 
-  const voice = useMemo(
-    () =>
-      createOpenAIRealtimeVoiceAdapter({
-        getToken: () => tokenRef.current,
-        getRole: () => roleRef.current,
-      }),
-    [],
-  );
-
   const runtime = useEveAgentRuntime({
     ...(eveHost ? { host: eveHost } : {}),
     auth: {
@@ -83,7 +73,6 @@ function EveChat({
     },
     adapters: {
       attachments: composerAttachmentAdapter,
-      voice,
     },
     onSessionChange: (session) => onSessionId(session?.sessionId),
     ...(sessionId

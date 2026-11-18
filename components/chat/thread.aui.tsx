@@ -15,10 +15,7 @@ import { ChatHeader, SavedTranscript, useChatThreads } from "@/components/chat/c
 import { TooltipIconButton } from "@/components/shared/tooltip-icon-button";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  VoiceSessionBar,
-  VoiceSessionCallScreen,
-} from "@/components/voice/voice-session-chrome";
+import { ComposerVoiceButton } from "@/components/voice/voice-session-chrome";
 import { cn } from "@/lib/utils";
 import {
   ActionBarMorePrimitive,
@@ -123,6 +120,8 @@ const taskAwareGroupBy = (
 export type ThreadProps = {
   components?: ThreadComponents | undefined;
   autoFocus?: boolean | undefined;
+  /** `voice` — interaction panel on `/voice-agent` (no header/composer overlay). */
+  variant?: "chat" | "voice" | undefined;
 };
 
 const EMPTY_COMPONENTS: ThreadComponents = {};
@@ -167,38 +166,42 @@ const ThreadHistorySkeleton: FC = () => (
 export const Thread: FC<ThreadProps> = ({
   components = EMPTY_COMPONENTS,
   autoFocus = true,
+  variant = "chat",
 }) => {
   const isEmpty = useAuiState(isNewChatView);
 
   return (
     <ThreadComponentsContext.Provider value={components}>
-      <ThreadRoot isEmpty={isEmpty} autoFocus={autoFocus} />
+      <ThreadRoot isEmpty={isEmpty} autoFocus={autoFocus} variant={variant} />
     </ThreadComponentsContext.Provider>
   );
 };
 
-const ThreadRoot: FC<{ isEmpty: boolean; autoFocus: boolean }> = ({
-  isEmpty,
-  autoFocus,
-}) => {
+const ThreadRoot: FC<{
+  isEmpty: boolean;
+  autoFocus: boolean;
+  variant: "chat" | "voice";
+}> = ({ isEmpty, autoFocus, variant }) => {
   const { Welcome = ThreadWelcome } = useContext(ThreadComponentsContext);
   const { activeId } = useChatThreads();
-  const welcomeLayout = isEmpty && !activeId;
+  const welcomeLayout = variant === "chat" && isEmpty && !activeId;
+  const isVoice = variant === "voice";
 
   return (
     <ThreadPrimitive.Root
-      className="aui-root aui-thread-root bg-background @container relative flex h-full flex-col"
+      className={cn(
+        "aui-root aui-thread-root @container relative flex h-full flex-col",
+        isVoice ? "bg-transparent" : "bg-background",
+      )}
       style={{
-        ["--thread-max-width" as string]: "44rem",
+        ["--thread-max-width" as string]: isVoice ? "100%" : "44rem",
         ["--composer-bg" as string]:
           "color-mix(in oklab, var(--color-muted) 30%, transparent)",
         ["--composer-radius" as string]: "1rem",
         ["--composer-padding" as string]: "8px",
       }}
     >
-      <ChatHeader />
-      <VoiceSessionBar />
-      <VoiceSessionCallScreen />
+      {!isVoice ? <ChatHeader /> : null}
       <ThreadPrimitive.Viewport
         turnAnchor="top"
         data-slot="aui_thread-viewport"
@@ -208,9 +211,10 @@ const ThreadRoot: FC<{ isEmpty: boolean; autoFocus: boolean }> = ({
           className={cn(
             "mx-auto flex w-full max-w-(--thread-max-width) flex-1 flex-col px-4 pt-4",
             welcomeLayout && "justify-center",
+            isVoice && "pb-4",
           )}
         >
-          {!activeId && (
+          {!isVoice && !activeId && (
             <AuiIf condition={isNewChatView}>
               <Welcome />
             </AuiIf>
@@ -223,30 +227,35 @@ const ThreadRoot: FC<{ isEmpty: boolean; autoFocus: boolean }> = ({
 
           <div
             data-slot="aui_message-group"
-            className="mb-14 flex flex-col gap-y-6 empty:hidden"
+            className={cn(
+              "flex flex-col gap-y-6 empty:hidden",
+              !isVoice && "mb-14",
+            )}
           >
-            <SavedTranscript />
+            {!isVoice ? <SavedTranscript /> : null}
             <ThreadPrimitive.Messages>
               {() => <ThreadMessage />}
             </ThreadPrimitive.Messages>
           </div>
 
-          <ThreadPrimitive.ViewportFooter
-            className={cn(
-              "aui-thread-viewport-footer bg-background flex flex-col gap-4 overflow-visible pb-4 md:pb-6",
-              !welcomeLayout &&
-              "sticky bottom-0 mt-auto rounded-t-(--composer-radius)",
-            )}
-          >
-            <ThreadScrollToBottom />
-            <ThreadFollowupSuggestions />
-            <Composer autoFocus={autoFocus} />
-            {!activeId && (
-              <AuiIf condition={(s) => isNewChatView(s) && s.composer.isEmpty}>
-                <ThreadSuggestions />
-              </AuiIf>
-            )}
-          </ThreadPrimitive.ViewportFooter>
+          {!isVoice ? (
+            <ThreadPrimitive.ViewportFooter
+              className={cn(
+                "aui-thread-viewport-footer bg-background flex flex-col gap-4 overflow-visible pb-4 md:pb-6",
+                !welcomeLayout &&
+                  "sticky bottom-0 mt-auto rounded-t-(--composer-radius)",
+              )}
+            >
+              <ThreadScrollToBottom />
+              <ThreadFollowupSuggestions />
+              <Composer autoFocus={autoFocus} />
+              {!activeId && (
+                <AuiIf condition={(s) => isNewChatView(s) && s.composer.isEmpty}>
+                  <ThreadSuggestions />
+                </AuiIf>
+              )}
+            </ThreadPrimitive.ViewportFooter>
+          ) : null}
         </div>
       </ThreadPrimitive.Viewport>
     </ThreadPrimitive.Root>
@@ -488,7 +497,10 @@ const ComposerAction: FC = () => {
 
   return (
     <div className="aui-composer-action-wrapper relative flex items-center justify-between">
-      <ComposerAddAttachment />
+      <div className="flex items-center gap-0.5">
+        <ComposerAddAttachment />
+        <ComposerVoiceButton />
+      </div>
       <div className="flex items-center gap-1.5">
         <AuiIf condition={(s) => s.thread.capabilities.dictation}>
           <AuiIf condition={(s) => s.composer.dictation == null}>
