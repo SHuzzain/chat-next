@@ -1,91 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Chat Next
 
-## Getting Started
+Embeddable streaming AI chat widget built with Next.js. The root page can be dropped into a parent site as a compact launcher that expands into a chat panel. It syncs light/dark theme and open/close state with the host page over `postMessage`, and streams replies from OpenAI or OpenRouter backends.
 
-First, run the development server:
+**Live demo:** [chat-next-ashy-two.vercel.app](https://chat-next-ashy-two.vercel.app)
+
+## Features
+
+- Streaming assistant replies via the Vercel AI SDK
+- OpenAI (`/api/chat/gpt`) and OpenRouter (`/api/chat/openrouter`) routes
+- Embed mode with `token`, `origin`, `role`, and `theme` query params
+- Host `postMessage` events for `theme`, `open`, `close`, and panel `resize`
+- Light/dark theming with `next-themes`
+- PM2 scripts for VPS deploys (`ecosystem.config.js`, default port 3606)
+
+## Stack
+
+- Next.js 16 + React 19 + TypeScript
+- Vercel AI SDK (`ai`, `@ai-sdk/openai`, `@ai-sdk/react`)
+- OpenRouter provider (`@openrouter/ai-sdk-provider`)
+- Tailwind CSS 4, Radix UI, lucide-react, motion, sonner
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The dev server listens on port 3606. Add the provider API keys your chosen route expects before sending messages.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Purpose |
+| --- | --- |
+| `pnpm dev` | Next.js dev server on port 3606 |
+| `pnpm build` | Production build |
+| `pnpm start` | Production server on port 3606 |
+| `pnpm lint` | ESLint |
+| `pnpm pm2:start` | Start with PM2 |
+| `pnpm deploy:prod` | Build, then start or restart PM2 |
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Production with PM2
-
-For self-hosting in production (e.g. on a VPS), use [PM2](https://pm2.keymetrics.io/) to manage the Next.js server process.
-
-### Setup
-
-1. Install dependencies and build:
-
-   ```bash
-   pnpm install
-   pnpm build
-   ```
-
-2. (First time on server) Optionally install PM2 globally:
-
-   ```bash
-   pnpm add -g pm2
-   # or npm install -g pm2
-   ```
-
-3. Start with PM2:
-
-   ```bash
-   pnpm pm2:start
-   ```
-
-### Useful PM2 commands (via npm scripts)
-
-| Command            | Description                     |
-|--------------------|---------------------------------|
-| `pnpm pm2:start`   | Start the app with PM2                 |
-| `pnpm pm2:stop`    | Stop the app                           |
-| `pnpm pm2:restart` | Hard restart the app                   |
-| `pnpm pm2:reload`  | Zero-downtime reload (cluster mode)    |
-| `pnpm pm2:delete`  | Remove from PM2                        |
-| `pnpm pm2:logs`    | View logs                              |
-| `pnpm pm2:status`  | Show process status                    |
-| `pnpm pm2:save`    | Save current PM2 process list          |
-| `pnpm deploy:prod` | Build + startOrRestart with PM2        |
-
-### PM2 ecosystem
-
-Configuration is in `ecosystem.config.js`. Default runs 1 instance on port 3606.
-
-To enable auto-start on server reboot:
-
-```bash
-pm2 startup
-pm2 save
-```
-
-See the [PM2 documentation](https://pm2.keymetrics.io/docs/usage/startup/) for full setup (systemd etc.).
-
-> Note: The default `pnpm start` / `npm start` still works without PM2. PM2 adds monitoring, auto-restart, logs, and clustering support.
+`pnpm start` still works without PM2. PM2 adds process monitoring, restart, and logs.
